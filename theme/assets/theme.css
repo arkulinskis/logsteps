@@ -1,0 +1,31 @@
+/* theme.css: Anvil puts this file in the page itself, so it applies before the app has loaded.
+   It styles Anvil's loading spinner (shown while the app starts and during server calls) as the app icon
+   (url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%23c2522b%22/%3E%3Cpath d=%22M32 11 12.5 22v18L32 29.5z%22 fill=%22%23fffcf7%22/%3E%3Cpath d=%22M32 11 51.5 22v18L32 29.5z%22 fill=%22%23ead9c2%22/%3E%3Cpath d=%22M12.5 40 32 29.5 51.5 40 32 51z%22 fill=%22%234f7f6a%22/%3E%3Cpath d=%22M32 11v18.5M12.5 40 32 51l19.5-11%22 fill=%22none%22 stroke=%22%232a231e%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22 opacity=%22.55%22/%3E%3Cellipse cx=%2225.5%22 cy=%2241%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 25.5 41%29%22/%3E%3Cellipse cx=%2231%22 cy=%2237.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 31 37.6%29%22/%3E%3Cellipse cx=%2237%22 cy=%2240.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 37 40.6%29%22/%3E%3C/svg%3E") is replaced by assets/icon.svg when syncing). Keep the colours in step with web/core.css.
+   Anvil substitutes its theme-colour tokens (percent sign, "color:", a name, percent sign) in this file,
+   so never write that pattern here. */
+html, body { background: #f5efe6; }
+@media (prefers-color-scheme: dark) { html:not([data-theme="light"]), html:not([data-theme="light"]) body { background: #1a1512; } }
+html[data-theme="dark"], html[data-theme="dark"] body { background: #1a1512; }
+
+html .anvil-spinner, #loadingSpinner {
+  --anvil-spinner-size: 88px;
+  width: 88px !important; height: 88px !important; top: calc(50% - 44px); left: calc(50% - 44px);
+  border-radius: 26px !important; background: #fffcf7 !important; background-image: none !important; color: transparent;
+  box-shadow: 0 10px 34px rgba(60, 40, 20, .22), 0 0 0 1px rgba(60, 40, 20, .08) !important;
+  animation: app-breathe 1.4s ease-in-out infinite;
+}
+html .anvil-spinner .anvil-spinner-svg, #loadingSpinner > svg, #loadingSpinner > img { display: none !important; }
+html .anvil-spinner::after, #loadingSpinner::after {
+  content: ""; position: absolute; inset: 14px; border-radius: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%23c2522b%22/%3E%3Cpath d=%22M32 11 12.5 22v18L32 29.5z%22 fill=%22%23fffcf7%22/%3E%3Cpath d=%22M32 11 51.5 22v18L32 29.5z%22 fill=%22%23ead9c2%22/%3E%3Cpath d=%22M12.5 40 32 29.5 51.5 40 32 51z%22 fill=%22%234f7f6a%22/%3E%3Cpath d=%22M32 11v18.5M12.5 40 32 51l19.5-11%22 fill=%22none%22 stroke=%22%232a231e%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22 opacity=%22.55%22/%3E%3Cellipse cx=%2225.5%22 cy=%2241%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 25.5 41%29%22/%3E%3Cellipse cx=%2231%22 cy=%2237.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 31 37.6%29%22/%3E%3Cellipse cx=%2237%22 cy=%2240.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 37 40.6%29%22/%3E%3C/svg%3E") center / contain no-repeat;
+}
+html .anvil-spinner::before, #loadingSpinner::before {
+  content: ""; position: absolute; inset: -7px; border-radius: 32px; border: 3px solid transparent;
+  border-top-color: #c2522b; border-right-color: #4f7f6a; animation: app-turn 1s linear infinite;
+}
+@keyframes app-turn { to { transform: rotate(360deg); } }
+@keyframes app-breathe { 50% { transform: scale(.94); } }
+@media (prefers-reduced-motion: reduce) {
+  html .anvil-spinner, #loadingSpinner { animation: none; }
+  html .anvil-spinner::before, #loadingSpinner::before { animation-duration: 3s; }
+}

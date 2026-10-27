@@ -1,0 +1,85 @@
+# Logsteps
+
+Walk slowly around a room with your phone and get a 3D model of it: step back into it, replay your walk, measure it,
+pin notes on it, share it with a link, and edit it on a computer. The 3D reconstruction is done by
+[lingbot-map](https://github.com/Robbyant/lingbot-map) (Robbyant, Apache-2.0) running on a "scan station": a computer
+with an NVIDIA GPU that runs `station/logsteps_station.py`. Built on [Anvil](https://anvil.works).
+
+- **App repo:** github.com/arkulinskis/logsteps (branch `master`). Anvil pulls `master`.
+- **Live:** not published yet.
+
+## What it does
+
+**For visitors:** a landing page (with three real public rooms), **Explore** (`#explore`: public rooms by room type,
+newest / most loved / most viewed, search), and **shared rooms** (`#s/<token>`): the 3D view turns slowly until touched,
+with Orbit / Walk / Plan, Replay, Measure, pins, size, notes, and a sign-up nudge. No account needed for any of this.
+
+**For members:**
+- **Rooms** (`#home`): the library with every state (ready, in the queue, processing with live progress, failed, upload
+  unfinished), filters, totals, the scan station's status, tips. A new member gets one private sample room.
+- **New scan** (`#capture`): a guided camera walk (about 3 sharp frames a second at 640 px; blurry frames and standing
+  still are skipped; compass coverage ring; "slow down" and "too dark" warnings; screen kept awake), or **upload a
+  video** (frames taken in the browser), or **import a 3D file** (PLY or GLB; units and Z-up are detected; GLB textures
+  are sampled into colours). Review, then the upload in batches. Quality: Fast / Balanced / Detailed; surface on/off.
+- **A room** (`#scan/<id>`): while waiting, the queue position, the station's stage and progress, the frames. When
+  ready: the 3D view (Orbit, Walk at eye height with WASD or a touch stick, Plan from above with a scale bar,
+  dollhouse cut, Photo / Height / Clay colours, points or surface, point size), **Replay** of the phone's path with the
+  original frame picture-in-picture, **Measure**, **pins** (add, edit, colours), measurements (W × D × H, floor area),
+  **share** (private / link / public, copy, native share, new link), **downloads** (PLY points, PLY surface, GLB),
+  notes, **versions** (use, delete), footage (process again with another quality, delete), delete.
+- **Studio** (`#studio/<id>`, made for a computer): box and lasso select (Shift adds, Alt removes, right-drag turns),
+  select a height band, find stray points, delete / keep only / invert, thin out, **level the floor** (3 clicks),
+  **set the real size** (2 clicks + the real length → "calibrated"), turn and recentre, colours (brightness, contrast,
+  saturation, warmth), paint the selection, pins, undo/redo (12 steps), keyboard shortcuts, export PLY/GLB,
+  **Save version** (uploads the edited points + surface; pins and the walk path move with the room).
+- Hearts on shared rooms, and **Copy to my rooms** (a private copy to explore or edit).
+
+**For admins** (`#admin`; arkulinskis@gmail.com becomes an admin on first sign-in):
+- **Overview:** people, scans, public scans, queue, failed, feedback, the station's status.
+- **Scans:** every scan, search, filter (public / shared / failed), change visibility, delete.
+- **Scan station:** online or offline, GPU, queue and problems (retry, stop), make a station key (shown once),
+  setup steps and the script download.
+- **Feedback inbox**, **Users**, **Demo data** (4 made-up people, 5 procedural rooms; remove or reload).
+
+## The scan station (needed for real scans)
+
+Anvil has no GPU, so new scans wait in the queue until a station is running. See `station/README.md`. In short, on a
+computer with an NVIDIA GPU: install PyTorch with CUDA, `pip install -e ./lingbot-map open3d`, then
+`python logsteps_station.py --app https://<the app's address> --key <key from Admin → Scan station>`.
+`--fake --once` tests the connection without a GPU.
+
+## Setting it up in Anvil (once)
+
+1. In the Anvil editor: **Create app → Clone from GitHub**, and paste `https://github.com/arkulinskis/logsteps`.
+2. **Users** service: email + password, sign-up allowed (already set in `anvil.yaml`; check it).
+3. Open the app in the editor. If it shows a **Schema Mismatch** alert, choose **"The schema of the source code is correct"** so Anvil creates the tables.
+4. **Run** it and sign up with **arkulinskis@gmail.com** straight away (that account becomes the admin).
+5. **Publish** (Publish → public URL, or your own domain).
+6. Admin → Scan station → make a key, and start the station (above).
+
+## Working on it
+
+See `.claude/skills/logsteps/SKILL.md`. In short:
+
+```
+python -I tools/check.py --ui                    # syntax, server tests, headless UI tests → ALL CHECKS PASSED
+python station/test_station.py                   # the station's geometry steps (needs numpy)
+python -I tools/preview/devserver.py 8765        # the app on in-memory data: http://localhost:8765/  (?as=ana#home, ?as=admin#admin)
+python tools/deploy.py                           # dry run (needs PyYAML, so no -I)
+python tools/deploy.py --push "Message"          # deploy: commit + push to GitHub, Anvil pulls it
+```
+
+## Project layout
+
+```
+web/            core.js/core.css (shared engine + design tokens), app.js (header, footer, icons), pages/*.html
+                (_viewer: the three.js engine, _cards: scan cards, then one file per page)
+client_code/    Main.py (the only Anvil form: bridge to the server, sign-in), legal.py
+server_code/    common.py, Accounts.py, Feedback.py, Admin.py, DemoData.py (+ DemoScenes.py, generated), legal_server.py,
+                Scans.py (library, capture, scan page, versions, uploads), Share.py (links, Explore, hearts, copies),
+                Files.py (signed file links), Station.py (the scan station's HTTP endpoints + admin)
+station/        logsteps_station.py (runs on the GPU computer, not in Anvil), README.md, test_station.py
+assets/         icon.svg + PNG icons, three-r147.js (three.js bundle), demo-*.ply + demo-*.jpg (demo rooms)
+tools/          sync_to_anvil.py (settings + table schema), deploy.py, check.py, make_demo_scans.py, make_demo_thumbs.py,
+                preview/ (dev server, UI tests, screenshots), testing/
+```
