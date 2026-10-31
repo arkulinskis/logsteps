@@ -473,7 +473,7 @@ metadata:
   title: Logsteps
 name: Logsteps
 native_deps:
-  head_html: "<script src=\"_/theme/legal-kit.js?v=7d8c7843dd\"></script>\n<meta name=\"viewport\" content=\"width=device-width,\
+  head_html: "<script src=\"_/theme/legal-kit.js?v=04df1b8315\"></script>\n<meta name=\"viewport\" content=\"width=device-width,\
     \ initial-scale=1, viewport-fit=cover\">\n<meta name=\"theme-color\" content=\"#f5efe6\">\n<meta name=\"apple-mobile-web-app-capable\"\
     \ content=\"yes\">\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"\
     https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,0..100&family=JetBrains+Mono:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap\"\
