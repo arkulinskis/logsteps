@@ -2281,13 +2281,33 @@
     bandLead: 'You probably do. It takes about a minute to scan it.'
   };
 
+  /* the "before": what the phone filmed. Six frames of the same room as you walk past it (nested SVGs crop each frame). */
+  function walkArt() {
+    var frame = function (x, y, dx, n) {
+      return '<svg x="' + x + '" y="' + y + '" width="200" height="126" viewBox="' + dx + ' 0 200 126">' +
+        '<rect x="-200" y="0" width="700" height="126" fill="#d9d2c4"/><path d="M-200 86 L500 86 L500 126 L-200 126 Z" fill="#a98f6d"/>' +
+        '<rect x="150" y="18" width="70" height="46" fill="#cfe3f0" stroke="#fff" stroke-width="3"/><rect x="20" y="24" width="40" height="30" fill="#e7a35f" opacity=".7"/>' +
+        '<rect x="40" y="62" width="110" height="34" rx="6" fill="#c2522b"/><rect x="34" y="54" width="122" height="14" rx="6" fill="#d36a43"/>' +
+        '<rect x="180" y="90" width="60" height="10" rx="3" fill="#3a3a3a"/>' +
+        '</svg><rect x="' + x + '" y="' + y + '" width="200" height="126" fill="none" stroke="#2a2a2a" stroke-width="2"/>' +
+        '<text x="' + (x + 8) + '" y="' + (y + 118) + '" font-family="JetBrains Mono, monospace" font-size="11" fill="#fff" opacity=".85">#' + n + '</text>';
+    };
+    var shots = [[90, 80, -40, 12], [310, 80, -10, 48], [530, 80, 20, 91], [90, 226, 50, 133], [310, 226, 80, 176], [530, 226, 110, 214]];
+    return '<svg viewBox="0 0 1080 430" preserveAspectRatio="xMinYMid slice" aria-hidden="true">' +
+      shots.map(function (s) { return frame(s[0], s[1], s[2], s[3]); }).join('') +
+      '<circle class="rec" cx="104" cy="50" r="7" fill="#e5484d"/><text x="118" y="55" font-family="JetBrains Mono, monospace" font-size="14" fill="#fff">REC 01:42 · 318 frames</text>' +
+      '<path d="M100 396 C260 380 420 404 600 386" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-dasharray="4 8" fill="none"/>' +
+      [140, 220, 300, 380, 460, 540].map(function (x, i) { return '<ellipse cx="' + x + '" cy="' + (392 + (i % 2 ? -8 : 4)) + '" rx="7" ry="4" fill="#fff" opacity=".5"/>'; }).join('') +
+      '</svg>';
+  }
+
   function heroArt() {
     /* an isometric room (two walls + floor), a sofa, a window, footsteps, the phone with its scan beam, and the 3D dots it captures */
     var dots = '';
     var pts = [[150, 120], [176, 108], [205, 96], [232, 86], [150, 150], [176, 140], [205, 128], [232, 118], [262, 84], [300, 98], [332, 112], [362, 126], [300, 128],
                [332, 142], [362, 158], [262, 116], [176, 172], [205, 160], [150, 182], [300, 162], [332, 176]];
     pts.forEach(function (p, i) { dots += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (i % 3 ? 2.6 : 3.4) + '"/>'; });
-    return '<div class="lp-art" aria-hidden="true">' +
+    return '<div class="lp-ba" data-ba><div class="side lp-walk">' + walkArt() + '</div><div class="side lp-art" aria-hidden="true">' +
       '<svg viewBox="0 0 520 430" fill="none" stroke-linejoin="round" stroke-linecap="round">' +
       '<path class="wall-l" d="M262 40 70 132v170l192-94z"/>' +
       '<path class="wall-r" d="M262 40l192 92v170L262 208z"/>' +
@@ -2317,7 +2337,9 @@
       '<text x="140" y="384" class="ftext" font-family="JetBrains Mono, monospace" font-size="13" transform="rotate(26 140 384)">4.80 m</text>' +
       '</svg>' +
       '<div class="lp-tag t1">' + UI.icon('ruler') + '<span>Sofa to window</span><b>2.14 m</b></div>' +
-      '<div class="lp-tag t2">' + UI.icon('cube') + '<b>184,302</b><span>points</span></div></div>';
+      '<div class="lp-tag t2">' + UI.icon('cube') + '<b>184,302</b><span>points</span></div></div>' +
+      '<span class="lbl l" aria-hidden="true">Your walk</span><span class="lbl r" aria-hidden="true">Your room, in 3D</span>' +
+      '<input type="range" min="0" max="100" value="46" aria-label="Drag to compare the phone walk with the 3D room"><span class="handle"></span></div>';
   }
 
   function stepPic(i) {
@@ -2334,7 +2356,7 @@
       : '<a class="ui-btn primary lg" href="#auth/signup" data-go="auth/signup">' + esc(C.cta) + ' ' + UI.icon('arrow') + '</a>' +
         '<a class="ui-btn lg" href="#explore" data-go="explore">' + UI.icon('globe') + 'Explore rooms</a>';
     view.innerHTML =
-      '<section class="lp-hero"><div class="ui-wrap"><div>' +
+      '<section class="lp-hero"><div class="ui-wrap"><div class="lp-pitch">' +
         '<div class="eyebrow">' + esc(C.eyebrow) + '</div><h1>' + C.title + '</h1><p class="lp-lead">' + esc(C.lead) + '</p>' +
         '<div class="lp-cta">' + primary + '</div>' +
         '<div class="lp-proof">' + C.proof.map(function (p) { return '<span>' + UI.icon('check') + esc(p) + '</span>'; }).join('') + '</div>' +
@@ -2356,6 +2378,8 @@
       '<section class="lp-section"><div class="ui-wrap"><div class="lp-band"><div><h2>' + esc(C.bandTitle) + '</h2><p>' + esc(C.bandLead) + '</p></div>' +
         (me ? '<a class="ui-btn lg" href="#capture" data-go="capture">' + UI.icon('camera') + 'Scan a room</a>' : '<a class="ui-btn lg" href="#auth/signup" data-go="auth/signup">' + esc(C.cta) + '</a>') +
       '</div><p class="lp-credit">3D reconstruction by <a href="https://github.com/Robbyant/lingbot-map" target="_blank" rel="noopener">lingbot-map</a> (Robbyant, Apache-2.0). 3D viewer by three.js.</p></div></section>';
+    var ba = view.querySelector('[data-ba]');
+    if (ba) ba.querySelector('input').addEventListener('input', function (e) { ba.style.setProperty('--x', e.target.value + '%'); });
     return UI.api('list_explore', { sort: 'loved' }).then(function (d) {
       var box = view.querySelector('[data-rooms]');
       box.innerHTML = d.scans.length ? '<div class="ls-grid">' + d.scans.slice(0, 3).map(function (s) { return LS.card(s, { explore: true, href: 's/' + s.token }); }).join('') + '</div>'
