@@ -19,12 +19,16 @@ html .anvil-spinner::after, #loadingSpinner::after {
   content: ""; position: absolute; inset: 14px; border-radius: 16px;
   background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2215%22 fill=%22%23c2522b%22/%3E%3Cpath d=%22M32 11 12.5 22v18L32 29.5z%22 fill=%22%23fffcf7%22/%3E%3Cpath d=%22M32 11 51.5 22v18L32 29.5z%22 fill=%22%23ead9c2%22/%3E%3Cpath d=%22M12.5 40 32 29.5 51.5 40 32 51z%22 fill=%22%234f7f6a%22/%3E%3Cpath d=%22M32 11v18.5M12.5 40 32 51l19.5-11%22 fill=%22none%22 stroke=%22%232a231e%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22 opacity=%22.55%22/%3E%3Cellipse cx=%2225.5%22 cy=%2241%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 25.5 41%29%22/%3E%3Cellipse cx=%2231%22 cy=%2237.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 31 37.6%29%22/%3E%3Cellipse cx=%2237%22 cy=%2240.6%22 rx=%222.6%22 ry=%221.6%22 fill=%22%23fffcf7%22 transform=%22rotate%28-28 37 40.6%29%22/%3E%3C/svg%3E") center / contain no-repeat;
 }
+/* loader:start scan brand=#c2522b (made by APP_MAKER/tools/loaders.py; rerun it instead of editing) */
+html .anvil-spinner, #loadingSpinner { overflow: hidden; animation: none; }
 html .anvil-spinner::before, #loadingSpinner::before {
-  content: ""; position: absolute; inset: -7px; border-radius: 32px; border: 3px solid transparent;
-  border-top-color: #c2522b; border-right-color: #4f7f6a; animation: app-turn 1s linear infinite;
+  content: ""; position: absolute; left: 0; right: 0; top: -24px; height: 24px; z-index: 1;
+  background: linear-gradient(180deg, transparent, rgba(194, 82, 43, 0.5) 80%, #c2522b);
+  animation: app-scan 1.5s cubic-bezier(.5, 0, .5, 1) infinite;
 }
-@keyframes app-turn { to { transform: rotate(360deg); } }
+@keyframes app-scan { to { transform: translateY(112px); } }
 @keyframes app-breathe { 50% { transform: scale(.94); } }
+/* loader:end */
 @media (prefers-reduced-motion: reduce) {
   html .anvil-spinner, #loadingSpinner { animation: none; }
   html .anvil-spinner::before, #loadingSpinner::before { animation-duration: 3s; }
