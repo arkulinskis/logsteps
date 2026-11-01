@@ -474,7 +474,7 @@ metadata:
   title: 'Logsteps: walk a room with your phone, get a 3D model'
 name: Logsteps
 native_deps:
-  head_html: "<script src=\"_/theme/legal-kit.js?v=cb77760982\"></script>\n<!-- seo:start (APP_MAKER/seo: edit seo/apps/logsteps.json\
+  head_html: "<script src=\"_/theme/legal-kit.js?v=d48f0dbff6\"></script>\n<!-- seo:start (APP_MAKER/seo: edit seo/apps/logsteps.json\
     \ and run seo.py, not here) -->\n<link rel=\"canonical\" href=\"https://logsteps.com/\">\n<meta name=\"robots\" content=\"\
     index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1\">\n<meta name=\"keywords\" content=\"3D\
     \ room scan, phone 3D scanner, room scanning app, 3D model of a room, measure a room from video, share 3D room, photogrammetry,\
