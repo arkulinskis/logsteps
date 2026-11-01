@@ -468,15 +468,46 @@ db_schema:
     server: full
     title: Users
 metadata:
-  description: Walk a room with your phone and get a 3D model you can replay, share with a link and edit on your computer.
+  description: Walk a room with your phone and get a 3D model you can replay, measure, pin notes on, share with a link and
+    edit on your computer.
   logo_img: asset:icon-512.png
-  title: Logsteps
+  title: 'Logsteps: walk a room with your phone, get a 3D model'
 name: Logsteps
 native_deps:
-  head_html: "<script src=\"_/theme/legal-kit.js?v=cb77760982\"></script>\n<meta name=\"viewport\" content=\"width=device-width,\
-    \ initial-scale=1, viewport-fit=cover\">\n<meta name=\"theme-color\" content=\"#f5efe6\">\n<meta name=\"apple-mobile-web-app-capable\"\
-    \ content=\"yes\">\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"\
-    https://fonts.gstatic.com\" crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,0..100&family=JetBrains+Mono:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap\"\
+  head_html: "<script src=\"_/theme/legal-kit.js?v=cb77760982\"></script>\n<!-- seo:start (APP_MAKER/seo: edit seo/apps/logsteps.json\
+    \ and run seo.py, not here) -->\n<link rel=\"canonical\" href=\"https://logsteps.com/\">\n<meta name=\"robots\" content=\"\
+    index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1\">\n<meta name=\"keywords\" content=\"3D\
+    \ room scan, phone 3D scanner, room scanning app, 3D model of a room, measure a room from video, share 3D room, photogrammetry,\
+    \ point cloud viewer, PLY GLB viewer\">\n<meta name=\"author\" content=\"Arkvital\">\n<meta property=\"og:type\" content=\"\
+    website\">\n<meta property=\"og:site_name\" content=\"Logsteps\">\n<meta property=\"og:title\" content=\"Logsteps: walk\
+    \ a room with your phone, get a 3D model\">\n<meta property=\"og:description\" content=\"Walk a room with your phone and\
+    \ get a 3D model you can replay, measure, pin notes on, share with a link and edit on your computer.\">\n<meta property=\"\
+    og:locale\" content=\"en_CA\">\n<meta property=\"og:url\" content=\"https://logsteps.com/\">\n<meta property=\"og:image\"\
+    \ content=\"https://logsteps.com/_/theme/og-image.png\">\n<meta property=\"og:image:width\" content=\"1200\"><meta property=\"\
+    og:image:height\" content=\"630\">\n<meta property=\"og:image:alt\" content=\"Logsteps: Walk a room with your phone and\
+    \ get a 3D model you can share\">\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n<meta name=\"twitter:title\"\
+    \ content=\"Logsteps: walk a room with your phone, get a 3D model\">\n<meta name=\"twitter:description\" content=\"Walk\
+    \ a room with your phone and get a 3D model you can replay, measure, pin notes on, share with a link and edit on your\
+    \ computer.\">\n<meta name=\"twitter:image\" content=\"https://logsteps.com/_/theme/og-image.png\">\n<link rel=\"alternate\"\
+    \ type=\"text/plain\" title=\"Logsteps for AI assistants\" href=\"https://logsteps.com/llms.txt\">\n<script type=\"application/ld+json\"\
+    >{\"@context\": \"https://schema.org\", \"@graph\": [{\"@type\": \"WebApplication\", \"@id\": \"https://logsteps.com/#app\"\
+    , \"name\": \"Logsteps\", \"url\": \"https://logsteps.com/\", \"description\": \"Walk a room with your phone and get a\
+    \ 3D model you can replay, measure, pin notes on, share with a link and edit on your computer.\", \"image\": \"https://logsteps.com/_/theme/og-image.png\"\
+    , \"inLanguage\": \"en\", \"publisher\": {\"@id\": \"https://arkvital.com/#org\"}, \"keywords\": \"3D room scan, phone\
+    \ 3D scanner, room scanning app, 3D model of a room, measure a room from video, share 3D room, photogrammetry, point cloud\
+    \ viewer, PLY GLB viewer\", \"applicationCategory\": \"UtilitiesApplication\", \"operatingSystem\": \"Any (web browser)\"\
+    , \"browserRequirements\": \"Requires JavaScript and a modern web browser\", \"featureList\": [\"Guided camera walk that\
+    \ skips blurry frames and warns when it is too dark\", \"Upload a video or import a PLY or GLB 3D file\", \"Orbit, Walk\
+    \ and Plan views, replay, measure and pins\", \"Share a room with a private link\", \"Explore public rooms by room type\"\
+    ], \"audience\": {\"@type\": \"Audience\", \"audienceType\": \"Home owners, renters, designers and anyone who wants to\
+    \ share a room in 3D\"}}, {\"@type\": \"WebSite\", \"@id\": \"https://logsteps.com/#site\", \"url\": \"https://logsteps.com/\"\
+    , \"name\": \"Logsteps\", \"publisher\": {\"@id\": \"https://arkvital.com/#org\"}}, {\"@type\": \"Organization\", \"@id\"\
+    : \"https://arkvital.com/#org\", \"name\": \"Arkvital\", \"url\": \"https://arkvital.com\", \"email\": \"arkvital@outlook.com\"\
+    , \"address\": {\"@type\": \"PostalAddress\", \"addressLocality\": \"Montreal\", \"addressRegion\": \"QC\", \"addressCountry\"\
+    : \"CA\"}}]}</script>\n<!-- seo:end -->\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, viewport-fit=cover\"\
+    >\n<meta name=\"theme-color\" content=\"#f5efe6\">\n<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n<link\
+    \ rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\"\
+    \ crossorigin>\n<link href=\"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,0..100&family=JetBrains+Mono:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap\"\
     \ rel=\"stylesheet\">\n<link id=\"ui-favicon\" rel=\"icon\" type=\"image/svg+xml\" href=\"_/theme/icon.svg?v=6f35307b04\"\
     >\n<link rel=\"apple-touch-icon\" href=\"_/theme/icon-180.png?v=6f35307b04\">\n<script>\n/* Keep our tab icon: Anvil adds\
     \ its own <link rel=\"icon\">, so drop any other icon link. */\n(function () {\n  function keep() {\n    var ours = document.getElementById('ui-favicon');\n\
