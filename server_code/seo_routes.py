@@ -58,7 +58,7 @@ SEO = {
   ]
  ],
  "site": "https://logsteps.com",
- "updated": "2026-10-31",
+ "updated": "2026-11-03",
  "icon": "icon-512.png",
  "colors": {
   "bg": "#f5efe6",
@@ -66,6 +66,22 @@ SEO = {
   "brand": "#cc5424",
   "on": "#ffffff"
  }
+}
+
+# Ownership files for Google Search Console, Bing Webmaster Tools and IndexNow (seo/verify.json; public by design)
+VERIFY = {
+ "/7eae74092bfda4fe7c6e287cc6afea5e.txt": [
+  "text/plain; charset=utf-8",
+  "7eae74092bfda4fe7c6e287cc6afea5e"
+ ],
+ "/BingSiteAuth.xml": [
+  "application/xml; charset=utf-8",
+  "<?xml version=\"1.0\"?>\n<users>\n\t<user>96898D70AB82EDA558D871F6AA728E5B</user>\n</users>\n"
+ ],
+ "/googlebb4ee84a0f39aa63.html": [
+  "text/html; charset=utf-8",
+  "google-site-verification: googlebb4ee84a0f39aa63.html"
+ ]
 }
 
 AI_BOTS = ["GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "Claude-User",
@@ -230,3 +246,12 @@ if ROUTE:  # the Python 3.10+ server runtimes have it; older ones serve nothing 
     @ROUTE("/about")
     def seo_about(**params):
         return _file(about_html(origin()), "text/html; charset=utf-8")
+
+    def _verify_route(i, path, ctype, body):
+        def seo_verify(**params):
+            return _file(body, ctype)
+        seo_verify.__name__ = "seo_verify_%d" % i
+        return ROUTE(path)(seo_verify)
+
+    for _i, (_path, (_ctype, _body)) in enumerate(sorted(VERIFY.items())):
+        _verify_route(_i, _path, _ctype, _body)
