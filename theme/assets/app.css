@@ -326,8 +326,6 @@ html.ui-modal-open { overflow: hidden; }
 .ui-stat b { font-weight: 600; }
 .anvil-role-avatar > button { background: var(--c-accent); color: #fff; font-weight: 600; }
 .ui-dark .anvil-role-avatar > button { color: #13201a; }
-.anvil-role-seg > button { font: 500 .85rem/1 var(--font-body); border-radius: 9px; display: inline-flex; align-items: center; gap: 6px; }
-.anvil-role-seg.anvil-role-on > button { background: var(--c-surface); color: var(--c-ink); box-shadow: var(--shadow); }
 .anvil-role-page-title, .anvil-role-sec-title, .anvil-role-card-title, .anvil-role-bk-title, .anvil-role-pf-title, .anvil-role-dlg-title,
 .anvil-role-au-title, .anvil-role-stat-num, .anvil-modal-title { font-weight: 600 !important; font-variation-settings: "opsz" 72, "SOFT" 50; }
 /* ===== cards ===== */
@@ -709,7 +707,8 @@ html.ui-modal-open { overflow: hidden; }
 .cp-methods { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 14px; margin: 20px 0 24px; }
 .cp-method { text-align: left; cursor: pointer; display: grid; gap: 8px; align-content: start; padding: 20px; border-radius: var(--radius); border: 1.5px solid var(--c-line);
   background: var(--c-surface); color: var(--c-ink); font: inherit; position: relative; transition: border-color .15s, transform .15s; }
-.cp-method:hover { transform: translateY(-2px); border-color: var(--c-brand); }
+.cp-method:hover { border-color: var(--c-brand); }
+@media (hover: hover) and (pointer: fine) { .cp-method:hover { transform: translateY(-2px); } }
 .cp-method.on { border-color: var(--c-brand); box-shadow: 0 0 0 3px var(--c-brand-soft); }
 .cp-method .cp-ic { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center; background: var(--c-brand-soft); color: var(--c-brand); }
 .cp-method .cp-ic .ui-ic { width: 24px; height: 24px; }
@@ -787,6 +786,7 @@ html.ui-modal-open { overflow: hidden; }
 .st-rail button.on { background: var(--c-brand); color: var(--c-brand-ink); }
 .st-rail button .ui-ic { width: 20px; height: 20px; }
 .st-rail hr { border: 0; border-top: 1px solid var(--c-line); margin: 4px 2px; width: 38px; }
+/* design-ok: hover-motion-ungated (a tooltip centred with transform; nothing moves) */
 .st-rail button[data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); white-space: nowrap; z-index: 50;
   background: var(--c-ink); color: var(--c-bg); font: 500 .8rem/1 var(--font-body); padding: 7px 9px; border-radius: 7px; pointer-events: none; }
 .st-stage { position: relative; min-width: 0; min-height: 0; }
@@ -822,7 +822,8 @@ html.ui-modal-open { overflow: hidden; }
   .st { grid-template-columns: 1fr; grid-template-rows: auto auto 60vh auto; height: auto; }
   .st-rail { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--c-line); overflow-x: auto; padding: 6px 8px; }
   .st-rail hr { border-top: 0; border-left: 1px solid var(--c-line); height: 34px; width: 0; margin: 4px 2px; }
-  .st-rail button[data-tip]:hover::after { display: none; }
+  /* design-ok: hover-motion-ungated (a tooltip centred with transform; nothing moves) */
+.st-rail button[data-tip]:hover::after { display: none; }
   .st-panel { border-left: 0; border-top: 1px solid var(--c-line); }
   .st-small { display: flex; }
   .st-top h1 { max-width: 60vw; }
@@ -1041,7 +1042,10 @@ anvil-dropzone { display: contents; }
 .anvil-notification .anvil-close, [data-notify="dismiss"] { min-width: 24px; min-height: 24px; }
 
 /* ===== Logsteps Forms pieces (Labels, RepeatingPanels, the engine hosts) ===== */
+.anvil-role-seg > button { font: 500 .85rem/1 var(--font-body); border-radius: 9px; display: inline-flex; align-items: center; gap: 6px; }
+.anvil-role-seg.anvil-role-on > button { background: var(--c-surface); color: var(--c-ink); box-shadow: var(--shadow); }
 .anvil-role-page-title { font: 600 clamp(1.9rem, 4vw, 2.6rem)/1.08 var(--font-display); color: var(--c-ink); margin: 0; letter-spacing: -.01em; }
+.ui .anvil-label { margin: 0; }  /* Anvil's spacing classes add margin around every Label */
 .anvil-role-lead, .lead-p { color: var(--c-muted); margin: 6px 0 0; }
 .anvil-role-empty-h { font: 600 1.15rem/1.2 var(--font-display); color: var(--c-ink); margin-bottom: 6px; }
 .anvil-role-muted-text { color: var(--c-muted); }

@@ -502,6 +502,7 @@ native_deps:
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- design-ok: overused-font (Fraunces is the brand display face; facelifts keep the app fonts) -->
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,500..700,0..100&family=JetBrains+Mono:wght@500;600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link id="ui-favicon" rel="icon" type="image/svg+xml" href="_/theme/icon.svg?v=243ae4a549">
     <link rel="apple-touch-icon" href="_/theme/icon-180.png?v=5857c22eab">
@@ -522,7 +523,7 @@ native_deps:
     <!-- Prepsto feedback panel: every "Submit feedback" link and button opens it (it is the only feedback channel). No floating button, no cookies, nothing loads until it is opened. Codes: APP_MAKER/prepsto-links.json -->
     <script src="https://prepsto.com/_/theme/widget.js" data-prepsto="s39d3vn" data-button="false" data-label="Submit feedback" async></script>
     <link rel="stylesheet" href="_/theme/icons.css?v=dcbd2b1d57">
-    <link rel="stylesheet" href="_/theme/app.css?v=fb8e2dff22">
+    <link rel="stylesheet" href="_/theme/app.css?v=afa085d3a4">
     <script src="_/theme/app-kit.js?v=8dc88407d9"></script>
     <script src="_/theme/ls-kit.js?v=8a9697c1f4"></script>
     <script src="_/theme/ls-viewer.js?v=7e3ac53daa"></script>
