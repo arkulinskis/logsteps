@@ -318,7 +318,7 @@ def reprocess(scan_id, settings=None):
         return C.fail("You can only change your own scans.")
     if s["status"] in ("queued", "processing", "capturing"):
         return C.fail("This scan is already on its way.")
-    if not app_tables.scan_frames.search(scan=s):
+    if not len(app_tables.scan_frames.search(scan=s)):
         return C.fail("The original footage was deleted, so this scan can't be processed again.")
     settings = settings if isinstance(settings, dict) else {}
     cur = dict(s["settings"] or {})

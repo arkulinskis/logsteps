@@ -248,7 +248,7 @@ def station_requeue(scan_id):
     s = C.row_by_id(app_tables.scans, scan_id)
     if s is None:
         return C.fail("That scan doesn't exist any more.")
-    if not app_tables.scan_frames.search(scan=s):
+    if not len(app_tables.scan_frames.search(scan=s)):
         return C.fail("This scan has no frames to process.")
     s.update(status="queued", stage="Waiting for the scan station", progress=0, error="", updated=C.now())
     return C.ok()
