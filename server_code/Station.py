@@ -146,11 +146,11 @@ def part(token, kind=None, idx=None, **ignored):
     if kind not in ("cloud", "mesh"):
         return _json({"error": "kind must be cloud or mesh"}, 400)
     try:
-        idx = int(idx)
+        idx = int(str(idx))
     except (TypeError, ValueError):
         return _json({"error": "bad idx"}, 400)
     body = anvil.server.request.body
-    data = body.get_bytes() if body is not None else b""
+    data = getattr(body, "get_bytes")() if body is not None else b""
     if not data or len(data) > PART_LIMIT or idx < 0 or idx > 40:
         return _json({"error": "parts must be 1 byte to 8 MB, at most 40 of them"}, 400)
     key = "st:%s:%s" % (token, kind)

@@ -1,0 +1,15 @@
+---
+custom_component: true
+properties:
+  - name: screen
+    type: string
+    default_value: ""
+    description: Which engine screen to show (capture or studio in theme/assets/ls-screens.js)
+toolbox_item:
+  title: Engine screen
+  group: Logsteps
+help_text: |
+  One of Logsteps' JavaScript editors (the camera walk, the Studio), mounted when the component appears and destroyed
+  (camera off, viewer freed) when it leaves. Call mount(args) with the address parts.
+---
+<div class="ls-screen-host"><div anvil:dom-node="host"></div></div>

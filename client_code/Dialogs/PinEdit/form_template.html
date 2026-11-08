@@ -1,0 +1,26 @@
+<div class="ui pin-edit">
+  <anvil-component type="Label" name="heading" prop:role='["dlg-title"]'></anvil-component>
+  <div class="ui-stack">
+    <label class="ui-field"><span>Label</span>
+      <anvil-component type="TextBox" name="label_box" prop:placeholder="e.g. Sofa, keep"></anvil-component>
+    </label>
+    <label class="ui-field"><span>Note <em>(optional)</em></span>
+      <anvil-component type="TextArea" name="note_box" prop:height="90"></anvil-component>
+    </label>
+    <div class="ui-field"><span>Colour</span>
+      <div class="ui-seg pin-colors" role="group" aria-label="Colour">
+        <anvil-component type="Button" name="c_brand" prop:text="Terracotta" prop:role='["seg", "pin-c", "pin-c-brand"]'></anvil-component>
+        <anvil-component type="Button" name="c_accent" prop:text="Sage" prop:role='["seg", "pin-c", "pin-c-accent"]'></anvil-component>
+        <anvil-component type="Button" name="c_gold" prop:text="Gold" prop:role='["seg", "pin-c", "pin-c-gold"]'></anvil-component>
+        <anvil-component type="Button" name="c_ink" prop:text="Ink" prop:role='["seg", "pin-c", "pin-c-ink"]'></anvil-component>
+      </div>
+    </div>
+    <anvil-component type="Label" name="message" prop:role='["msg-error"]' prop:visible="false"></anvil-component>
+    <div class="ui-row end">
+      <anvil-component type="Button" name="remove_button" prop:text="Remove" prop:role='["btn", "btn-danger", "ic-trash"]'></anvil-component>
+      <span class="ui-spacer"></span>
+      <anvil-component type="Button" name="cancel_button" prop:text="Cancel" prop:role='["btn", "btn-ghost"]'></anvil-component>
+      <anvil-component type="Button" name="save_button" prop:text="Save" prop:role='["btn", "btn-primary"]'></anvil-component>
+    </div>
+  </div>
+</div>

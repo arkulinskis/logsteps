@@ -34,7 +34,7 @@ def get_shared(token):
     seen = anvil.server.session.get("seen") or []
     if token not in seen and not (me is not None and s["owner"] == me):
         s["views"] = (s["views"] or 0) + 1
-        anvil.server.session["seen"] = (seen + [token])[-200:]
+        getattr(anvil.server, "session")["seen"] = (seen + [token])[-200:]
     d = Scans.detail(s, me, shared=True)
     d["hearted"] = bool(me is not None and app_tables.hearts.get(scan=s, user=me))
     d["owner_view"] = bool(me is not None and s["owner"] == me)

@@ -1,0 +1,128 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap">
+      <div class="ui-page-head"><div><h1>Admin</h1><p class="muted">Only admins see this page.</p></div></div>
+      <nav class="ui-tabs">
+        <a href="#admin/overview" anvil:name="tab_overview"><i class="ic ic-grid"></i>Overview</a>
+        <a href="#admin/scans" anvil:name="tab_scans"><i class="ic ic-cube"></i>Scans</a>
+        <a href="#admin/station" anvil:name="tab_station"><i class="ic ic-cpu"></i>Scan station</a>
+        <a href="#admin/feedback" anvil:name="tab_feedback"><i class="ic ic-inbox"></i>Feedback</a>
+        <a href="#admin/users" anvil:name="tab_users"><i class="ic ic-users"></i>Users</a>
+        <a href="#admin/demo" anvil:name="tab_demo"><i class="ic ic-database"></i>Demo data</a>
+      </nav>
+
+      <div anvil:name="overview_part">
+        <div class="ad-stats">
+          <a class="ui-card ui-stat ad-stat" href="#admin/users"><anvil-component type="Label" name="s_users" prop:role='["stat-num"]'></anvil-component><span>people signed up</span></a>
+          <a class="ui-card ui-stat ad-stat" href="#admin/scans"><anvil-component type="Label" name="s_scans" prop:role='["stat-num"]'></anvil-component><span>scans (not demo)</span></a>
+          <a class="ui-card ui-stat ad-stat" href="#admin/scans"><anvil-component type="Label" name="s_public" prop:role='["stat-num"]'></anvil-component><span>public scans</span></a>
+          <a class="ui-card ui-stat ad-stat" href="#admin/station"><anvil-component type="Label" name="s_queue" prop:role='["stat-num"]'></anvil-component><span>in the queue</span></a>
+          <a class="ui-card ui-stat ad-stat" href="#admin/station"><anvil-component type="Label" name="s_failed" prop:role='["stat-num"]'></anvil-component><span>failed</span></a>
+          <a class="ui-card ui-stat ad-stat" href="#admin/feedback"><anvil-component type="Label" name="s_feedback" prop:role='["stat-num"]'></anvil-component><span>new feedback</span></a>
+        </div>
+        <div class="ui-card ad-station-line">
+          <span class="ad-dot" anvil:name="ov_dot"></span>
+          <anvil-component type="Label" name="ov_station" prop:role='["strong"]'></anvil-component>
+          <a href="#admin/station" anvil:name="ov_setup">Set it up</a>
+        </div>
+        <anvil-component type="Label" name="demo_line" prop:role='["fine-print", "ad-demo-line"]'></anvil-component>
+      </div>
+
+      <div anvil:name="scans_part">
+        <div class="ui-row ad-search">
+          <anvil-component type="TextBox" name="scan_search" prop:placeholder="Search by title, name or email" prop:role='["ad-search-box"]'></anvil-component>
+          <anvil-component type="Button" name="scan_search_button" prop:text="Search" prop:role='["btn", "btn-icon", "ic-search"]'></anvil-component>
+          <div class="ui-seg">
+            <anvil-component type="Button" name="w_all" prop:text="All" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="w_public" prop:text="Public" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="w_shared" prop:text="Shared" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="w_failed" prop:text="Failed" prop:role='["seg"]'></anvil-component>
+          </div>
+          <anvil-component type="Label" name="scans_count" prop:role='["fine-print"]'></anvil-component>
+        </div>
+        <anvil-component type="RepeatingPanel" name="scans_panel" prop:item_template="Logsteps.Items.AdminScanRow" prop:role='["ad-scans"]'></anvil-component>
+        <div class="ui-empty" anvil:name="no_scans"><i class="ic ic-cube"></i><h2>No scans</h2></div>
+      </div>
+
+      <div anvil:name="station_part">
+        <div class="ad-st">
+          <div class="ad-col">
+            <div class="ui-card">
+              <h2 class="ad-h"><span class="ad-dot" anvil:name="st_dot"></span><anvil-component type="Label" name="st_state"></anvil-component></h2>
+              <anvil-component type="Label" name="st_text" prop:role='["muted-text"]'></anvil-component>
+            </div>
+            <div class="ui-card">
+              <h2 class="ad-h"><i class="ic ic-cube"></i>Queue and problems</h2>
+              <anvil-component type="RepeatingPanel" name="jobs_panel" prop:item_template="Logsteps.Items.JobRow" prop:role='["ad-jobs"]'></anvil-component>
+              <p class="muted" anvil:name="no_jobs">Nothing waiting. All caught up.</p>
+            </div>
+          </div>
+          <div class="ad-col">
+            <div class="ui-card">
+              <h2 class="ad-h"><i class="ic ic-key"></i>Station key</h2>
+              <anvil-component type="Label" name="key_text" prop:role='["muted-text"]'></anvil-component>
+              <div anvil:name="new_key_part">
+                <p class="small"><b>Copy it now:</b> it won't be shown again.</p>
+                <anvil-component type="Label" name="new_key" prop:role='["ad-key"]'></anvil-component>
+                <anvil-component type="Button" name="copy_key" prop:text="Copy" prop:role='["btn", "btn-sm", "ic-copy"]'></anvil-component>
+              </div>
+              <anvil-component type="Button" name="make_key" prop:role='["btn", "btn-primary", "ic-key"]'></anvil-component>
+            </div>
+            <div class="ui-card">
+              <h2 class="ad-h"><i class="ic ic-terminal"></i>Set up the station</h2>
+              <ol class="ad-steps">
+                <li>On a computer with an NVIDIA GPU, install Python 3.10, PyTorch with CUDA, <a href="https://github.com/Robbyant/lingbot-map" target="_blank" rel="noopener">lingbot-map</a> and (for surfaces) Open3D:
+                  <pre class="ad-code" tabindex="0">conda create -n logsteps python=3.10 -y
+conda activate logsteps
+pip install torch --index-url https://download.pytorch.org/whl/cu128
+git clone https://github.com/Robbyant/lingbot-map
+pip install -e ./lingbot-map open3d</pre></li>
+                <li><a href="_/theme/logsteps_station.txt" download="logsteps_station.py">Download logsteps_station.py</a> (also in the repo's <span class="mono">station/</span> folder, with a README).</li>
+                <li>Run it with the key:<anvil-component type="Label" name="run_cmd" prop:role='["ad-code"]'></anvil-component>Test the connection without a GPU by adding <span class="mono">--fake --once</span>.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div anvil:name="feedback_part">
+        <div class="ui-row ad-filter">
+          <div class="ui-seg">
+            <anvil-component type="Button" name="f_new" prop:text="New" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="f_read" prop:text="Read" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="f_done" prop:text="Done" prop:role='["seg"]'></anvil-component>
+            <anvil-component type="Button" name="f_all" prop:text="All" prop:role='["seg"]'></anvil-component>
+          </div>
+        </div>
+        <anvil-component type="RepeatingPanel" name="feedback_panel" prop:item_template="Logsteps.Items.FeedbackRow" prop:role='["ad-fb"]'></anvil-component>
+        <div class="ui-empty" anvil:name="no_feedback">
+          <i class="ic ic-inbox"></i>
+          <h2>No messages here</h2>
+          <p>New feedback goes to Prepsto (prepsto.com). Older messages and requests from the app show up here.</p>
+        </div>
+      </div>
+
+      <div anvil:name="users_part">
+        <div class="ui-row ad-search">
+          <anvil-component type="TextBox" name="search_box" prop:placeholder="Search by name or email" prop:role='["ad-search-box"]'></anvil-component>
+          <anvil-component type="Button" name="search_button" prop:text="Search" prop:role='["btn", "ic-search"]'></anvil-component>
+          <anvil-component type="Label" name="users_count" prop:role='["fine-print"]'></anvil-component>
+        </div>
+        <div class="ad-table ad-users-head"><b>Name</b><b>Email</b><b>Joined</b><b>Admin</b><b>Active</b></div>
+        <anvil-component type="RepeatingPanel" name="users_panel" prop:item_template="Logsteps.Items.UserRow"></anvil-component>
+      </div>
+
+      <div anvil:name="demo_part">
+        <div class="ui-card ui-narrow ad-demo">
+          <h3>Demo data</h3>
+          <p class="muted">Example people and content, so the app never looks empty for the first visitors. Demo rows are flagged, so removing them never touches real data. Once removed, it stays removed until you load it again.</p>
+          <anvil-component type="Label" name="demo_status"></anvil-component>
+          <div class="ui-row">
+            <anvil-component type="Button" name="demo_load_button" prop:text="Load demo data" prop:role='["btn", "btn-primary", "ic-refresh"]'></anvil-component>
+            <anvil-component type="Button" name="demo_remove_button" prop:text="Remove demo data" prop:role='["btn", "btn-danger", "ic-trash"]'></anvil-component>
+          </div>
+        </div>
+      </div>
+    </div>
+  </anvil-block>
+</anvil-form>

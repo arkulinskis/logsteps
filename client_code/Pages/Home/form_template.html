@@ -1,0 +1,48 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap">
+      <div class="lb-head">
+        <div>
+          <anvil-component type="Label" name="hello" prop:role='["page-title"]'></anvil-component>
+          <anvil-component type="Label" name="lead" prop:role='["lead"]'></anvil-component>
+        </div>
+        <div class="lb-actions">
+          <a class="ui-btn" href="#capture/import"><i class="ic ic-upload"></i>Import</a>
+          <a class="ui-btn primary" href="#capture"><i class="ic ic-camera"></i>New scan</a>
+        </div>
+      </div>
+      <div class="lb-stats">
+        <div class="lb-stat"><anvil-component type="Label" name="n_scans" prop:role='["stat-b"]'></anvil-component><span>rooms</span></div>
+        <div class="lb-stat"><anvil-component type="Label" name="n_ready" prop:role='["stat-b"]'></anvil-component><span>ready in 3D</span></div>
+        <div class="lb-stat"><anvil-component type="Label" name="n_points" prop:role='["stat-b"]'></anvil-component><span>points captured</span></div>
+        <div class="lb-stat"><anvil-component type="Label" name="n_shared" prop:role='["stat-b"]'></anvil-component><span>shared</span></div>
+      </div>
+      <div class="lb-bar">
+        <div class="ui-seg" role="group" aria-label="Show">
+          <anvil-component type="Button" name="f_all" prop:text="All" prop:role='["seg"]'></anvil-component>
+          <anvil-component type="Button" name="f_ready" prop:text="Ready" prop:role='["seg"]'></anvil-component>
+          <anvil-component type="Button" name="f_pending" prop:text="On its way" prop:role='["seg"]'></anvil-component>
+          <anvil-component type="Button" name="f_shared" prop:text="Shared" prop:role='["seg"]'></anvil-component>
+        </div>
+        <div class="lb-station" anvil:name="station"><i class="lb-dot"></i><anvil-component type="Label" name="station_text"></anvil-component></div>
+      </div>
+      <anvil-component type="RepeatingPanel" name="cards" prop:item_template="Logsteps.Items.ScanCard" prop:role='["ls-grid"]'></anvil-component>
+      <div class="ui-empty" anvil:name="empty">
+        <i class="ic ic-cube"></i>
+        <anvil-component type="Label" name="empty_title" prop:role='["empty-h"]'></anvil-component>
+        <anvil-component type="Label" name="empty_text"></anvil-component>
+        <a class="ui-btn primary" href="#capture"><i class="ic ic-camera"></i>New scan</a>
+      </div>
+      <details class="ui-card lb-tips" anvil:dom-node="tips">
+        <summary><i class="ic ic-bulb"></i>Four tips for a great scan</summary>
+        <div class="lb-tip-grid">
+          <div class="lb-tip"><span class="n">1</span><b>Light it up</b><p>Open the curtains and switch the lights on. Dark corners come out patchy.</p></div>
+          <div class="lb-tip"><span class="n">2</span><b>Walk, don't spin</b><p>Walk slowly along the walls about a metre away. Turning on the spot gives the model nothing to measure.</p></div>
+          <div class="lb-tip"><span class="n">3</span><b>Sweep up and down</b><p>Tilt the phone to catch the floor and ceiling edges as you go.</p></div>
+          <div class="lb-tip"><span class="n">4</span><b>Close the loop</b><p>Finish where you started. It helps everything line up.</p></div>
+        </div>
+      </details>
+      <anvil-component type="Timer" name="timer" prop:interval="0"></anvil-component>
+    </div>
+  </anvil-block>
+</anvil-form>

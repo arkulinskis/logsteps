@@ -1,0 +1,167 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap sc-wrap">
+      <div class="sc-top">
+        <a class="ui-btn ghost sm" href="#home"><i class="ic ic-back"></i>Your rooms</a>
+        <span class="ui-spacer"></span>
+        <span class="ui-badge" anvil:name="top_badge"><i class="ic" anvil:name="top_icon"></i><anvil-component type="Label" name="top_text" prop:role='["badge-text"]'></anvil-component></span>
+      </div>
+
+      <div class="ui-empty" anvil:name="missing">
+        <i class="ic ic-lock"></i>
+        <anvil-component type="Label" name="missing_text" prop:role='["empty-h"]'></anvil-component>
+        <a class="ui-btn primary" href="#home">Your rooms</a>
+      </div>
+
+      <!-- not ready yet: where the scan is -->
+      <div class="sc-wait" anvil:name="wait_part">
+        <div class="sc-hero">
+          <div class="art" anvil:dom-node="hero_art"></div>
+          <img alt="" anvil:dom-node="hero_img">
+          <div class="sc-scanline" anvil:name="scanline"></div>
+        </div>
+        <div class="ui-card">
+          <anvil-component type="Label" name="w_title" prop:role='["sc-wait-title"]'></anvil-component>
+          <anvil-component type="Label" name="w_room" prop:role='["fine-print"]'></anvil-component>
+          <div anvil:name="failed_part">
+            <p class="sc-stage sc-stage-bad">This scan didn't work</p>
+            <anvil-component type="Label" name="w_error" prop:role='["muted-text"]'></anvil-component>
+            <div anvil:name="retry_part">
+              <p class="small muted">Try again with a different quality, or scan the room again in better light.</p>
+              <div class="ui-row sc-retry">
+                <anvil-component type="DropDown" name="retry_quality" prop:role='["sc-quality"]'></anvil-component>
+                <anvil-component type="Button" name="retry_button" prop:text="Try again" prop:role='["btn", "btn-primary", "ic-refresh"]'></anvil-component>
+              </div>
+            </div>
+          </div>
+          <div anvil:name="stuck_part">
+            <p class="sc-stage">The upload didn't finish</p>
+            <p class="muted">The app was closed before all the frames arrived. Scan the room again; this one can be deleted.</p>
+            <a class="ui-btn primary" href="#capture"><i class="ic ic-camera"></i>Scan again</a>
+          </div>
+          <div anvil:name="progress_part">
+            <anvil-component type="Label" name="w_stage" prop:role='["sc-stage"]'></anvil-component>
+            <div class="sc-bar"><i class="sc-bar-fill" anvil:name="w_bar"></i></div>
+            <anvil-component type="Label" name="w_station" prop:role='["fine-print"]'></anvil-component>
+            <anvil-component type="RepeatingPanel" name="steps" prop:item_template="Logsteps.Items.StepRow" prop:role='["sc-steps"]'></anvil-component>
+            <p class="small muted sc-close-note">You can close this page; the room appears in your library when it's ready.</p>
+          </div>
+          <dl class="sc-kv sc-kv-gap">
+            <div class="kv-row"><dt>Frames</dt><dd><anvil-component type="Label" name="w_frames"></anvil-component></dd></div>
+            <div class="kv-row" anvil:name="row_walk"><dt>Walk</dt><dd><anvil-component type="Label" name="w_walk"></anvil-component></dd></div>
+            <div class="kv-row"><dt>Quality</dt><dd><anvil-component type="Label" name="w_quality"></anvil-component></dd></div>
+          </dl>
+          <anvil-component type="RepeatingPanel" name="strip" prop:item_template="Logsteps.Items.FrameThumb" prop:role='["sc-strip"]'></anvil-component>
+          <div class="ui-row sc-del-row">
+            <anvil-component type="Button" name="w_delete" prop:text="Delete" prop:role='["btn", "btn-sm", "btn-danger", "ic-trash"]'></anvil-component>
+          </div>
+        </div>
+      </div>
+
+      <!-- ready: the 3D view and the side panel -->
+      <div class="sc-grid" anvil:name="ready_part">
+        <div class="sc-main">
+          <div class="sc-sticky">
+            <anvil-component type="Logsteps.Components.Viewer" name="viewer" prop:view_role="sc-view"></anvil-component>
+          </div>
+        </div>
+        <aside class="sc-side">
+          <div class="sc-title">
+            <div anvil:name="title_show">
+              <div class="sc-title-row">
+                <anvil-component type="Label" name="title" prop:role='["sc-h1"]'></anvil-component>
+                <anvil-component type="Button" name="rename_button" prop:text="Rename" prop:role='["btn", "btn-ghost", "btn-icon", "btn-sm", "ic-edit"]'></anvil-component>
+              </div>
+              <anvil-component type="Label" name="meta" prop:role='["fine-print"]'></anvil-component>
+            </div>
+            <div class="sc-rename" anvil:name="title_edit">
+              <label class="ui-field"><span>Name</span><anvil-component type="TextBox" name="title_box"></anvil-component></label>
+              <label class="ui-field"><span>Room type</span><anvil-component type="DropDown" name="room_box"></anvil-component></label>
+              <div class="ui-row">
+                <anvil-component type="Button" name="rename_save" prop:text="Save" prop:role='["btn", "btn-primary", "btn-sm"]'></anvil-component>
+                <anvil-component type="Button" name="rename_cancel" prop:text="Cancel" prop:role='["btn", "btn-ghost", "btn-sm"]'></anvil-component>
+              </div>
+            </div>
+          </div>
+
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-ruler"></i>Measurements</h2>
+            <div class="sc-dims" anvil:name="dims">
+              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span>wide · m</span></div>
+              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span>deep · m</span></div>
+              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span>high · m</span></div>
+            </div>
+            <dl class="sc-kv">
+              <div class="kv-row" anvil:name="row_floor"><dt>Floor</dt><dd><anvil-component type="Label" name="kv_floor"></anvil-component></dd></div>
+              <div class="kv-row"><dt>Points</dt><dd><anvil-component type="Label" name="kv_points"></anvil-component></dd></div>
+              <div class="kv-row" anvil:name="row_faces"><dt>Surface</dt><dd><anvil-component type="Label" name="kv_faces"></anvil-component></dd></div>
+              <div class="kv-row" anvil:name="row_ms"><dt>Processed in</dt><dd><anvil-component type="Label" name="kv_ms"></anvil-component></dd></div>
+            </dl>
+            <anvil-component type="Label" name="scale_note" prop:role='["fine-print", "sc-foot"]'></anvil-component>
+          </div>
+
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-pin"></i>Pins</h2>
+            <anvil-component type="RepeatingPanel" name="pins" prop:item_template="Logsteps.Items.PinRow" prop:role='["sc-pins"]'></anvil-component>
+            <anvil-component type="Label" name="no_pins" prop:role='["fine-print"]'></anvil-component>
+            <anvil-component type="Button" name="add_pin" prop:text="Add a pin" prop:role='["btn", "btn-sm", "ic-pinplus"]'></anvil-component>
+          </div>
+
+          <div class="ui-card sc-card sc-share" anvil:name="share_card">
+            <h2 class="sc-h"><i class="ic ic-link"></i>Share</h2>
+            <div class="ui-seg" role="group" aria-label="Who can see it">
+              <anvil-component type="Button" name="v_private" prop:text="Private" prop:role='["seg", "ic-lock"]'></anvil-component>
+              <anvil-component type="Button" name="v_link" prop:text="Link" prop:role='["seg", "ic-link"]'></anvil-component>
+              <anvil-component type="Button" name="v_public" prop:text="Public" prop:role='["seg", "ic-globe"]'></anvil-component>
+            </div>
+            <p class="small muted sc-tight" anvil:name="private_note">Only you can see this room. Choose Link to share it with someone, or Public to show it in Explore too.</p>
+            <div anvil:name="link_part">
+              <div class="sc-link">
+                <anvil-component type="TextBox" name="link_box" prop:role='["sc-linkfield"]'></anvil-component>
+                <anvil-component type="Button" name="copy_button" prop:text="Copy" prop:role='["btn", "btn-sm", "btn-primary", "ic-copy"]'></anvil-component>
+              </div>
+              <div class="ui-row sc-share-row">
+                <anvil-component type="Button" name="send_button" prop:text="Send" prop:role='["btn", "btn-sm", "ic-external"]'></anvil-component>
+                <a class="ui-btn sm" anvil:name="see_link" href="#home"><i class="ic ic-eye"></i>See it as others do</a>
+                <anvil-component type="Button" name="newlink_button" prop:text="New link" prop:tooltip="The old link stops working" prop:role='["btn", "btn-sm", "btn-ghost", "ic-refresh"]'></anvil-component>
+              </div>
+              <anvil-component type="Label" name="link_note" prop:role='["fine-print"]'></anvil-component>
+            </div>
+          </div>
+
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-edit"></i>Edit and download</h2>
+            <a class="ui-btn primary block sc-studio" anvil:name="studio_link" href="#home"><i class="ic ic-brush"></i>Open in Studio</a>
+            <p class="small muted sc-studio-note">Crop, clean, level the floor, calibrate the size and recolour, on a computer.</p>
+            <div class="sc-dl">
+              <anvil-component type="Button" name="dl_cloud" prop:text="Points (.ply)" prop:role='["btn", "btn-sm", "ic-download"]'></anvil-component>
+              <anvil-component type="Button" name="dl_mesh" prop:text="Surface (.ply)" prop:role='["btn", "btn-sm", "ic-download"]'></anvil-component>
+              <anvil-component type="Button" name="dl_glb" prop:text="3D file (.glb)" prop:role='["btn", "btn-sm", "ic-download"]'></anvil-component>
+            </div>
+          </div>
+
+          <div class="ui-card sc-card sc-notes" anvil:name="notes_card">
+            <h2 class="sc-h"><i class="ic ic-chat"></i>Notes</h2>
+            <anvil-component type="TextArea" name="notes_box" prop:placeholder="Paint colours, what to buy, ideas…"></anvil-component>
+          </div>
+
+          <div class="ui-card sc-card" anvil:name="versions_card">
+            <h2 class="sc-h"><i class="ic ic-history"></i>Versions</h2>
+            <anvil-component type="RepeatingPanel" name="versions" prop:item_template="Logsteps.Items.VersionRow" prop:role='["sc-vers"]'></anvil-component>
+          </div>
+
+          <div class="ui-card sc-card" anvil:name="footage_card">
+            <h2 class="sc-h"><i class="ic ic-image"></i>Footage</h2>
+            <anvil-component type="Label" name="footage_text" prop:role='["fine-print"]'></anvil-component>
+            <div class="ui-row" anvil:name="footage_actions">
+              <anvil-component type="Button" name="reprocess_button" prop:text="Process again" prop:role='["btn", "btn-sm", "ic-refresh"]'></anvil-component>
+              <anvil-component type="Button" name="delfootage_button" prop:text="Delete footage" prop:role='["btn", "btn-sm", "btn-danger", "ic-trash"]'></anvil-component>
+            </div>
+          </div>
+          <anvil-component type="Button" name="delete_button" prop:text="Delete this room" prop:role='["btn", "btn-danger", "btn-block", "ic-trash"]'></anvil-component>
+        </aside>
+      </div>
+      <anvil-component type="Timer" name="timer" prop:interval="0"></anvil-component>
+    </div>
+  </anvil-block>
+</anvil-form>

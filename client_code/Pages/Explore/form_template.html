@@ -1,0 +1,33 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap">
+      <div class="ex-head">
+        <div>
+          <anvil-component type="Label" name="title" prop:text="Rooms people shared" prop:role='["page-title"]'></anvil-component>
+          <p class="lead-p">Walk into kitchens, studios and living rooms scanned with Logsteps. Copy one to your rooms to try the Studio on it.</p>
+        </div>
+        <div class="ex-search">
+          <anvil-component type="TextBox" name="search_box" prop:placeholder="Search rooms or people" prop:type="search"></anvil-component>
+          <anvil-component type="Button" name="search_button" prop:text="Search" prop:role='["btn", "btn-icon", "ic-search"]'></anvil-component>
+        </div>
+      </div>
+      <div class="ex-rooms" tabindex="0" aria-label="Room types">
+        <anvil-component type="RepeatingPanel" name="rooms_panel" prop:item_template="Logsteps.Items.RoomChip" prop:role='["contents"]'></anvil-component>
+      </div>
+      <div class="ex-sort">
+        <anvil-component type="Label" name="count" prop:role='["fine-print"]'></anvil-component>
+        <div class="ui-seg" role="group" aria-label="Sort">
+          <anvil-component type="Button" name="s_new" prop:text="Newest" prop:role='["seg"]'></anvil-component>
+          <anvil-component type="Button" name="s_loved" prop:text="Most loved" prop:role='["seg"]'></anvil-component>
+          <anvil-component type="Button" name="s_viewed" prop:text="Most viewed" prop:role='["seg"]'></anvil-component>
+        </div>
+      </div>
+      <anvil-component type="RepeatingPanel" name="cards" prop:item_template="Logsteps.Items.ScanCard" prop:role='["ls-grid"]'></anvil-component>
+      <div class="ui-empty" anvil:name="empty">
+        <i class="ic ic-globe"></i>
+        <anvil-component type="Label" name="empty_title" prop:role='["empty-h"]'></anvil-component>
+        <anvil-component type="Label" name="empty_text"></anvil-component>
+      </div>
+    </div>
+  </anvil-block>
+</anvil-form>

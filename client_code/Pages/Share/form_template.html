@@ -1,0 +1,58 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap sh-wrap">
+      <div class="ui-empty" anvil:name="not_shared">
+        <i class="ic ic-lock"></i>
+        <h2>This room isn't shared</h2>
+        <anvil-component type="Label" name="not_shared_text"></anvil-component>
+        <a class="ui-btn primary" href="#explore"><i class="ic ic-globe"></i>Explore public rooms</a>
+      </div>
+      <div anvil:name="room_part">
+        <div class="sh-head">
+          <div>
+            <anvil-component type="Label" name="title" prop:role='["page-title"]'></anvil-component>
+            <div class="sh-by">
+              <anvil-component type="Label" name="avatar" prop:role='["sh-avatar"]'></anvil-component>
+              <anvil-component type="Label" name="byline"></anvil-component>
+            </div>
+          </div>
+          <div class="sh-actions">
+            <anvil-component type="Button" name="heart_button" prop:role='["btn", "sh-heart", "ic-heart"]'></anvil-component>
+            <a class="ui-btn" anvil:name="manage_link" href="#home"><i class="ic ic-edit"></i>Manage</a>
+            <anvil-component type="Button" name="remix_button" prop:text="Copy to my rooms" prop:role='["btn", "ic-copy"]'></anvil-component>
+            <anvil-component type="Button" name="share_button" prop:text="Share" prop:role='["btn", "btn-primary", "ic-link"]'></anvil-component>
+          </div>
+        </div>
+        <anvil-component type="Logsteps.Components.Viewer" name="viewer" prop:auto_rotate="true" prop:view_role="sh-view"></anvil-component>
+        <div class="sh-info">
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-chat"></i>About this room</h2>
+            <anvil-component type="Label" name="notes" prop:role='["sh-notes"]'></anvil-component>
+            <div anvil:name="pins_part">
+              <h2 class="sc-h sc-h-gap"><i class="ic ic-pin"></i>Pins</h2>
+              <anvil-component type="RepeatingPanel" name="pins" prop:item_template="Logsteps.Items.PinRow" prop:role='["sc-pins"]'></anvil-component>
+            </div>
+          </div>
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-ruler"></i>Size</h2>
+            <div class="sc-dims" anvil:name="dims">
+              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span>wide · m</span></div>
+              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span>deep · m</span></div>
+              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span>high · m</span></div>
+            </div>
+            <dl class="sc-kv">
+              <div class="kv-row" anvil:name="row_floor"><dt>Floor</dt><dd><anvil-component type="Label" name="kv_floor"></anvil-component></dd></div>
+              <div class="kv-row"><dt>Points</dt><dd><anvil-component type="Label" name="kv_points"></anvil-component></dd></div>
+            </dl>
+            <p class="small muted sc-foot">Use Measure under the view to check any distance yourself.</p>
+          </div>
+        </div>
+        <div class="sh-cta" anvil:name="cta">
+          <img src="_/theme/icon.svg" alt="">
+          <div><h2>Scan your own rooms</h2><p>Walk around a room with your phone. Get a 3D model you can replay, measure and share like this one.</p></div>
+          <a class="ui-btn lg" href="#auth/signup">Try Logsteps, free</a>
+        </div>
+      </div>
+    </div>
+  </anvil-block>
+</anvil-form>

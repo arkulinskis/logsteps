@@ -1,0 +1,31 @@
+---
+custom_component: true
+properties:
+  - name: auto_rotate
+    type: boolean
+    default_value: false
+    description: Turn the room slowly until someone touches it (the share page)
+  - name: view_role
+    type: string
+    default_value: ""
+    description: Extra CSS class for the 3D view box (its height), e.g. sc-view or sh-view
+events:
+  - name: ready
+    description: The room has loaded and the view can be used
+  - name: picked
+    description: "After pick(): the point tapped, as [x, y, z], or None when the tap missed the room"
+    parameters:
+      - name: point
+toolbox_item:
+  title: 3D room view
+  group: Logsteps
+help_text: |
+  The 3D view of a scan (three.js, theme/assets/ls-viewer.js) with its control bar (Orbit / Walk / Plan, Replay,
+  Measure, Display, picture, full screen). Call show_scan(scan) with the scan dict from the server; the model loads in
+  the background (event ready). pick(hint) makes the next tap a pin (event picked); set_pins(list), thumbnail(),
+  download(kind) and dispose() talk to the engine.
+---
+<div class="ls-viewer-box">
+  <div class="ls-view" anvil:dom-node="view"></div>
+  <div anvil:dom-node="bar"></div>
+</div>

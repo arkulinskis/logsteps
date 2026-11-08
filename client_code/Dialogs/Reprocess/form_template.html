@@ -1,0 +1,16 @@
+<div class="ui reprocess">
+  <h2 class="dlg-h">Process this room again?</h2>
+  <p class="muted">The scan station rebuilds it from the footage. The current version stays in Versions.</p>
+  <div class="ui-stack">
+    <div class="ui-seg rp-quality" role="group" aria-label="Quality">
+      <anvil-component type="Button" name="q_fast" prop:text="Fast" prop:role='["seg"]'></anvil-component>
+      <anvil-component type="Button" name="q_balanced" prop:text="Balanced" prop:role='["seg"]'></anvil-component>
+      <anvil-component type="Button" name="q_detailed" prop:text="Detailed" prop:role='["seg"]'></anvil-component>
+    </div>
+    <anvil-component type="CheckBox" name="mesh_box" prop:text="Build a surface too" prop:checked="true"></anvil-component>
+    <div class="ui-row end">
+      <anvil-component type="Button" name="cancel_button" prop:text="Cancel" prop:role='["btn", "btn-ghost"]'></anvil-component>
+      <anvil-component type="Button" name="go_button" prop:text="Process again" prop:role='["btn", "btn-primary", "ic-refresh"]'></anvil-component>
+    </div>
+  </div>
+</div>

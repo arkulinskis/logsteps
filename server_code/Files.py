@@ -44,7 +44,7 @@ def get_file(token, what, t=None, v=None, i=None, **ignored):
         return _send(m, "private, max-age=86400") if m is not None else _not_found()
     if what == "frame":
         try:
-            f = app_tables.scan_frames.get(scan=s, idx=int(i))
+            f = app_tables.scan_frames.get(scan=s, idx=int(str(i)))
         except (TypeError, ValueError):
             f = None
         return _send(f["image"], "private, max-age=86400") if f is not None else _not_found()
