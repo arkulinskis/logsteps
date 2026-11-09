@@ -408,10 +408,10 @@
     c.addEventListener('pointercancel', function () { down = null; });
     V._kd = function (e) {
       if (/input|textarea|select/i.test((e.target && e.target.tagName) || '')) return;
-      V.keys[e.key.toLowerCase()] = true; V.keys.shift = e.shiftKey;
-      if (V.state.mode === 'walk' && /^(arrow|w$|a$|s$|d$)/.test(e.key.toLowerCase())) e.preventDefault();
+      V.keys[(e.key || '').toLowerCase()] = true; V.keys.shift = e.shiftKey;
+      if (V.state.mode === 'walk' && /^(arrow|w$|a$|s$|d$)/.test((e.key || '').toLowerCase())) e.preventDefault();
     };
-    V._ku = function (e) { V.keys[e.key.toLowerCase()] = false; V.keys.shift = e.shiftKey; };
+    V._ku = function (e) { V.keys[(e.key || '').toLowerCase()] = false; V.keys.shift = e.shiftKey; };
     window.addEventListener('keydown', V._kd); window.addEventListener('keyup', V._ku);
     V.controls.addEventListener('change', function () { V.needs = true; });
     V.orthoControls.addEventListener('change', function () { if (V._lastZoom !== V.ortho.zoom) { V._lastZoom = V.ortho.zoom; V.setPointSize(V.state.size); } V.needs = true; });

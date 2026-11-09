@@ -1071,7 +1071,7 @@
     }
     function onKey(e) {
       if (!V || /input|textarea|select/i.test(e.target.tagName) || document.querySelector('.ui-modal-wrap')) return;
-      var k = e.key.toLowerCase();
+      var k = (e.key || '').toLowerCase();
       if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); return; }
       if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); doRedo(); return; }
       if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); save(); return; }
