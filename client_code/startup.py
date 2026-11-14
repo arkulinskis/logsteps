@@ -3,6 +3,9 @@ spinner shows meanwhile), the Privacy & Terms kit, the bridge to the 3D engines,
 import anvil.server
 
 from . import legal, ls, router, state
+from . import session_guard
+
+session_guard.start()  # an expired server session reloads quietly instead of "Session expired, refresh now"
 
 LEGAL_THEME = {"accent": "#c2522b", "accentDark": "#e07a52"}  # matches --c-brand in app.css (light, dark)
 
