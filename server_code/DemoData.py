@@ -38,6 +38,12 @@ DEMO_SCANS = {
         {"p": [-2.8, 1.55, -1.15], "label": "Piece 1", "note": "\"Terracotta field\", 100 x 75 cm.", "color": "brand"},
         {"p": [3.1, 1.55, -1.15], "label": "Piece 5", "note": "Needs a brighter spot.", "color": "gold"}]),
 }
+# saved measurements + furniture boxes (scans.extras), in the scene's metres
+DEMO_EXTRAS = {
+    "loft": {"measures": [{"a": [-3.05, 1.2, -2.4], "b": [-3.05, 1.2, 2.4], "label": "Brick wall"},
+                          {"a": [-1.98, 1.65, -2.37], "b": [0.74, 1.65, -2.37], "label": "Window"}],
+             "fits": [{"label": "New sofa", "w": 2.3, "d": 0.95, "h": 0.85, "x": 1.75, "z": -0.75, "a": 90}]},
+}
 HEARTS = {"loft": ["theo", "ines", "kofi"], "kitchen": ["maya", "ines"], "office": ["maya"], "gallery": ["theo", "ines", "kofi", "maya"]}
 # Tables that hold demo rows (each has an is_demo column). Children before parents.
 DEMO_TABLES = ["hearts", "scan_frames", "scan_versions", "scans"]
@@ -69,6 +75,8 @@ def _add_scan(owner, slug, title, notes, visibility, created, views, annotations
                                  views=views, hearts=0, process_ms=48000 + len(slug) * 3100, is_demo=demo)
     Scans.add_version(s, owner, "station" if demo else "sample", "Reconstructed with lingbot-map" if demo else "Sample scan",
                       asset="demo-%s.ply" % slug, stats=_stats(info))
+    if slug in DEMO_EXTRAS:
+        Scans.set_extras(s, **DEMO_EXTRAS[slug])  # quietly skipped until the extras column exists
     return s
 
 

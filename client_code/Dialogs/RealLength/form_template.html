@@ -1,0 +1,29 @@
+<div class="ui rl-dlg">
+  <anvil-component type="Label" name="heading" prop:text="How long is it, really?" prop:role='["dlg-title"]'></anvil-component>
+  <anvil-component type="Label" name="intro" prop:role='["muted-text"]'></anvil-component>
+  <div class="ui-stack">
+    <div class="ui-field"><span>Something with a known size</span>
+      <div class="rl-presets">
+        <anvil-component type="Button" name="p_door" prop:text="Door 2.03 m / 80″" prop:role='["btn", "btn-sm", "rl-chip"]'></anvil-component>
+        <anvil-component type="Button" name="p_a4" prop:text="A4 paper 29.7 cm" prop:role='["btn", "btn-sm", "rl-chip"]'></anvil-component>
+        <anvil-component type="Button" name="p_letter" prop:text="Letter paper 11″" prop:role='["btn", "btn-sm", "rl-chip"]'></anvil-component>
+      </div>
+    </div>
+    <div class="ui-field"><span>Real length</span>
+      <div class="rl-row" anvil:name="metric_row">
+        <anvil-component type="TextBox" name="len_box" prop:type="number" prop:role='["rl-num"]'></anvil-component>
+        <anvil-component type="DropDown" name="unit_box" prop:role='["rl-unit"]'></anvil-component>
+      </div>
+      <div class="rl-row" anvil:name="imperial_row">
+        <anvil-component type="TextBox" name="ft_box" prop:type="number" prop:role='["rl-num"]'></anvil-component><span class="rl-u">ft</span>
+        <anvil-component type="TextBox" name="in_box" prop:type="number" prop:role='["rl-num"]'></anvil-component><span class="rl-u">in</span>
+      </div>
+    </div>
+    <anvil-component type="Label" name="preview" prop:role='["fine-print"]'></anvil-component>
+    <anvil-component type="Label" name="message" prop:role='["msg-error"]' prop:visible="false"></anvil-component>
+    <div class="ui-row end">
+      <anvil-component type="Button" name="cancel_button" prop:text="Cancel" prop:role='["btn", "btn-ghost"]'></anvil-component>
+      <anvil-component type="Button" name="save_button" prop:text="Fix the sizes" prop:role='["btn", "btn-primary", "ic-ruler"]'></anvil-component>
+    </div>
+  </div>
+</div>

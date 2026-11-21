@@ -112,4 +112,22 @@ def remix(token):
                                  cover=s["cover"], is_demo=False)
     Scans.add_version(n, me, "remix", "Copied from %s" % C.name_of(s["owner"]), cloud=v["cloud"], mesh=v["mesh"],
                       asset=v["asset"], mesh_asset=v["mesh_asset"], stats=v["stats"])
+    ex = Scans.extras_of(s)
+    if ex:
+        Scans.set_extras(n, **ex)
     return C.ok(scan_id=n.get_id())
+
+
+@anvil.server.callable
+def get_plan(token):
+    """The floor plan sheet (#plan/<token>): the same room as the share link (or the owner's own private room), with its
+    saved measurements, pins and furniture boxes. Doesn't count a view."""
+    DemoData.ensure_loaded()
+    s = _shared_scan(token)
+    if s is None:
+        return C.fail("This room isn't shared (any more), or the link is wrong.")
+    me = C.me()
+    d = Scans.detail(s, me, shared=True)
+    d["owner_view"] = bool(me is not None and s["owner"] == me)
+    d["shared_link"] = s["visibility"] in ("link", "public")
+    return C.ok(scan=d)

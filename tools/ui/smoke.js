@@ -108,6 +108,10 @@
     await open('#explore', /Rooms people shared/);
     const shared = await until(() => cardHref(/^#s\//), 'a public room card');
     await open(shared, /Scanned by/);
+    await open('#plan/' + shared.split('/')[1], /Floor plan/);   // the floor plan sheet of a shared room, signed out
+    await until(() => window.LS_PLAN && (window.LS_PLAN.canvas.parentNode || window.LS_PLAN.error), 'the floor plan sheet', 60000)
+      .then(() => { if (window.LS_PLAN.error) bad.push('plan: ' + window.LS_PLAN.error); else log.push('ok   floor plan drawn, ' + window.LS_PLAN.angle() + ' deg'); })
+      .catch(() => bad.push('plan: the sheet was not drawn'));
     await open('#s/not-a-real-token', /isn't shared/);
     await open('#auth', /Sign in/);
     await open('#auth/signup', /Create account/);

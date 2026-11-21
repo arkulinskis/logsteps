@@ -22,6 +22,14 @@ MAX_PART_BYTES = 900 * 1024        # one upload part (base64 from the browser is
 MAX_MODEL_BYTES = 80 * 1024 * 1024
 QUALITY = {"fast": "Fast", "balanced": "Balanced", "detailed": "Detailed"}
 STATION_ONLINE_SECONDS = 150
+# The station scales every room as if the phone was held at this height (station/logsteps_station.py EYE_HEIGHT).
+# Sizes are corrected without touching the stored geometry: a factor in the current version's stats.
+#   stats["kh"]  from the phone height given at capture (capture["held"] / STATION_EYE), set when the station delivers
+#   stats["k"] + stats["ref"] {label, real, raw}  "It's really..." on the scan page (raw = the length in the file)
+# Studio bakes the factor into the points when it saves a version (clean_stats drops k/kh there).
+STATION_EYE = 1.4
+K_MIN, K_MAX = 0.5, 2.0
+MAX_MEASURES, MAX_FITS = 40, 20
 
 
 # ----------------------------------------------------------------------------------------------- shared views
@@ -63,15 +71,73 @@ def station_state():
             "queue": len(app_tables.scans.search(status="queued")), "busy": len(app_tables.scans.search(status="processing"))}
 
 
+def _num(x):
+    try:
+        f = float(x)
+    except (TypeError, ValueError):
+        return None
+    return f if f == f and abs(f) < 1e9 else None
+
+
+def clean_ref(ref):
+    """The reference behind a size fix: {label, real, raw} (metres), or None."""
+    ref = ref if isinstance(ref, dict) else {}
+    real, raw = _num(ref.get("real")), _num(ref.get("raw"))
+    if not real or not raw or real <= 0 or raw <= 0:
+        return None
+    return {"label": C.text(ref.get("label"), 40) or "a length you measured", "real": round(real, 4), "raw": round(raw, 4)}
+
+
+def scale_info(scan, stats):
+    """(k, source, ref) for a scan's current version: k multiplies every length in the file."""
+    k, source, ref = 1.0, scan["scale_source"] or "estimated", None
+    kh = _num(stats.get("kh"))
+    if kh and K_MIN <= kh <= K_MAX:
+        k, source = kh, "height"
+        ref = {"label": "your phone height", "real": round(kh * STATION_EYE, 3), "raw": STATION_EYE}
+    kk = _num(stats.get("k"))
+    if kk and K_MIN <= kk <= K_MAX:
+        k, source, ref = kk, "phone", clean_ref(stats.get("ref"))
+    return k, source, ref
+
+
+def extras_of(row):
+    """scans.extras ({measures, fits}), or {} (also before the user accepts the new column in the Anvil editor)."""
+    try:
+        x = row["extras"]
+    except Exception:
+        return {}
+    return dict(x) if isinstance(x, dict) else {}
+
+
+def set_extras(row, **parts):
+    """Merge parts into scans.extras. False while the column doesn't exist yet (Schema Mismatch not accepted)."""
+    x = extras_of(row)
+    x.update(parts)
+    try:
+        row["extras"] = x
+        return True
+    except Exception as e:
+        print("extras not saved: %r" % e)
+        return False
+
+
 def card(scan, me=None):
     v = scan["current"]
     stats = (v["stats"] if v is not None else None) or {}
+    k, _, _ = scale_info(scan, stats)
+    size = stats.get("size")
+    if isinstance(size, list) and len(size) == 3 and k != 1:
+        size = [round(float(x) * k, 3) for x in size]
+    area = stats.get("area")
+    if area is not None and k != 1:
+        area = round(float(area) * k * k, 1)
     return {"id": scan.get_id(), "token": scan["token"], "title": scan["title"], "room": scan["room"] or "other",
             "room_label": C.ROOMS.get(scan["room"] or "other", "Other"), "status": scan["status"], "stage": scan["stage"] or "",
             "progress": scan["progress"] or 0, "visibility": scan["visibility"] or "private", "source": scan["source"] or "capture",
             "created": C.iso(scan["created"]), "updated": C.iso(scan["updated"]), "frames": scan["frame_count"] or 0,
-            "points": stats.get("points") or 0, "faces": stats.get("faces") or 0, "size": stats.get("size"),
-            "area": stats.get("area"), "has_mesh": bool(v is not None and (v["mesh"] or v["mesh_asset"])),
+            "points": stats.get("points") or 0, "faces": stats.get("faces") or 0, "size": size,
+            "area": area, "has_mesh": bool(v is not None and (v["mesh"] or v["mesh_asset"])),
             "thumb": thumb_url(scan), "cover": cover_url(scan), "hearts": scan["hearts"] or 0, "views": scan["views"] or 0,
             "author": C.name_of(scan["owner"]), "demo": bool(scan["is_demo"]),
             "mine": me is not None and scan["owner"] == me}
@@ -86,8 +152,11 @@ def detail(scan, me, shared=False):
     v = scan["current"]
     cloud, mesh = version_urls(scan, v)
     can_edit = me is not None and (scan["owner"] == me or (C.is_admin(me) and not shared))
+    k, source, ref = scale_info(scan, (v["stats"] if v is not None else None) or {})
+    ex = extras_of(scan)
     d.update({"notes": scan["notes"] or "", "error": scan["error"] or "", "path": scan["path"] or [],
-              "annotations": scan["annotations"] or [], "scale_source": scan["scale_source"] or "estimated",
+              "annotations": scan["annotations"] or [], "scale_source": source, "scale_k": k, "scale_ref": ref,
+              "measures": clean_measures(ex.get("measures")), "fits": clean_fits(ex.get("fits")),
               "settings": scan["settings"] or {}, "process_ms": scan["process_ms"], "can_edit": bool(can_edit),
               "model": {"cloud": cloud, "mesh": mesh, "n": v["n"] if v is not None else None,
                         "stats": (v["stats"] if v is not None else None) or {}},
@@ -216,6 +285,9 @@ def finish_capture(scan_id, info=None):
     s["capture"] = {"seconds": min(int(info.get("seconds") or 0), 3600), "skipped": min(int(info.get("skipped") or 0), 100000),
                     "portrait": bool(info.get("portrait")), "width": int(info.get("width") or 0), "height": int(info.get("height") or 0),
                     "motion": bool(info.get("motion"))}
+    held = _num(info.get("held"))  # how high the phone was held (from the member's height; the height itself stays in the browser)
+    if held and 0.8 <= held <= 2.0:
+        s["capture"] = dict(s["capture"], held=round(held, 3))
     middle = app_tables.scan_frames.get(scan=s, idx=n // 3) or app_tables.scan_frames.search(scan=s)[0]
     s.update(frame_count=n, cover=middle["image"], status="queued", stage="Waiting for the scan station", progress=0, error="")
     touch(s)
@@ -376,6 +448,118 @@ def clean_path(path):
         if len(vals) == 7 and all(abs(x) < 100000 for x in vals[:6]):
             out.append(vals)
     return out
+
+
+def _point(p):
+    try:
+        out = [round(float(x), 4) for x in (p or [])[:3]]
+    except (TypeError, ValueError):
+        return None
+    return out if len(out) == 3 and all(abs(x) < 10000 for x in out) else None
+
+
+def clean_measures(items):
+    """Saved measurements: [{a: [x,y,z], b: [x,y,z], label}] in the file's coordinates (lengths x k on screen)."""
+    out = []
+    for m in (items if isinstance(items, list) else [])[:MAX_MEASURES]:
+        if not isinstance(m, dict):
+            continue
+        a, b = _point(m.get("a")), _point(m.get("b"))
+        if a is None or b is None or sum((a[i] - b[i]) ** 2 for i in range(3)) < 1e-6:
+            continue
+        out.append({"a": a, "b": b, "label": C.text(m.get("label"), 60)})
+    return out
+
+
+def clean_fits(items):
+    """Furniture boxes: [{label, w, d, h (real metres, 0.1-6), x, z (file coordinates, on the floor), a (degrees)}]."""
+    out = []
+    for f in (items if isinstance(items, list) else [])[:MAX_FITS]:
+        if not isinstance(f, dict):
+            continue
+        w, d, h, x, z, a = (_num(f.get(key)) for key in ("w", "d", "h", "x", "z", "a"))
+        if w is None or d is None or h is None or x is None or z is None:
+            continue
+        if not all(0.1 <= v <= 6 for v in (w, d, h)) or abs(x) > 10000 or abs(z) > 10000:
+            continue
+        out.append({"label": C.text(f.get("label"), 40) or "Box", "w": round(w, 3), "d": round(d, 3), "h": round(h, 3),
+                    "x": round(x, 4), "z": round(z, 4), "a": round((a or 0) % 360, 1)})
+    return out
+
+
+NEEDS_SCHEMA = "This needs a quick update in the Anvil editor first (accept the new extras column). Please try again later."
+
+
+@anvil.server.callable(require_user=True)
+def save_measures(scan_id, items):
+    me = C.require_user()
+    s = own_scan(scan_id, me)
+    if s is None:
+        return C.fail("You can only change your own scans.")
+    if isinstance(items, list) and len(items) > MAX_MEASURES:
+        return C.fail("A room can keep up to %d measurements. Delete one first." % MAX_MEASURES)
+    measures = clean_measures(items)
+    if not set_extras(s, measures=measures):
+        return C.fail(NEEDS_SCHEMA)
+    touch(s)
+    return C.ok(measures=measures)
+
+
+@anvil.server.callable(require_user=True)
+def save_fits(scan_id, items):
+    me = C.require_user()
+    s = own_scan(scan_id, me)
+    if s is None:
+        return C.fail("You can only change your own scans.")
+    if isinstance(items, list) and len(items) > MAX_FITS:
+        return C.fail("A room can keep up to %d furniture boxes. Remove one first." % MAX_FITS)
+    fits = clean_fits(items)
+    if not set_extras(s, fits=fits):
+        return C.fail(NEEDS_SCHEMA)
+    touch(s)
+    return C.ok(fits=fits)
+
+
+@anvil.server.callable(require_user=True)
+def set_scale(scan_id, k, ref=None):
+    """It's really...: every size of the current version x k (k = real / raw of the reference). The file stays as it is."""
+    me = C.require_user()
+    s = own_scan(scan_id, me)
+    if s is None:
+        return C.fail("You can only change your own scans.")
+    v = s["current"]
+    if v is None or s["status"] != "ready":
+        return C.fail("This room has no 3D model yet.")
+    ref = clean_ref(ref)
+    k = (ref["real"] / ref["raw"]) if ref else _num(k)
+    if not k or k <= 0:
+        return C.fail("Type the real length.")
+    if not K_MIN <= k <= K_MAX:
+        return C.fail("That would make the room more than twice as big or small. Check the length, or set the real size in "
+                      "Studio on a computer.")
+    stats = dict(v["stats"] or {})
+    stats["k"] = round(k, 5)
+    stats["ref"] = ref or {"label": "a length you measured", "real": None, "raw": None}
+    v["stats"] = stats
+    touch(s)
+    return C.ok(scan=detail(s, me))
+
+
+@anvil.server.callable(require_user=True)
+def clear_scale(scan_id):
+    """Undo the fix: back to the estimate (or to the phone height given at capture)."""
+    me = C.require_user()
+    s = own_scan(scan_id, me)
+    if s is None:
+        return C.fail("You can only change your own scans.")
+    v = s["current"]
+    if v is not None:
+        stats = dict(v["stats"] or {})
+        stats.pop("k", None)
+        stats.pop("ref", None)
+        v["stats"] = stats
+        touch(s)
+    return C.ok(scan=detail(s, me))
 
 
 @anvil.server.callable(require_user=True)
@@ -550,6 +734,9 @@ def upload_finish(target):
         s["path"] = clean_path(target.get("path"))
     if target.get("scale_source") in ("estimated", "calibrated", "import", "demo"):
         s["scale_source"] = target["scale_source"]
+    ex = target.get("extras")
+    if isinstance(ex, dict):  # Studio carries saved measurements and furniture boxes through its edits
+        set_extras(s, measures=clean_measures(ex.get("measures")), fits=clean_fits(ex.get("fits")))
     s.update(status="ready", stage="", progress=1, thumb=None)
     touch(s)
     return C.ok(scan=detail(s, me))

@@ -1122,3 +1122,94 @@ pre.ad-code { margin: 8px 0 12px; }
   .ex-search .anvil-role-btn { flex: none; }
   .sc-link { flex-wrap: wrap; }
 }
+
+/* ===== measurements, the size fix, "Will it fit?" (2026-11-20) ===== */
+/* the measure bar and the fit bar under a 3D view (ls-viewer.js LS.controls) */
+.ls-mbar, .ls-fbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 8px; padding: 8px 10px 8px 12px;
+  border: 1px solid var(--c-line); border-radius: var(--radius-sm); background: var(--c-surface); }
+.ls-mbar .grow, .ls-fbar .grow { flex: 1; }
+.ls-mlen { font: 600 1rem/1 var(--font-mono); background: #f4d35e; color: #2a231e; padding: 6px 9px; border-radius: 6px; white-space: nowrap; }
+.ls-mbar input[type=text] { flex: 1 1 160px; min-width: 0; min-height: 38px; }
+.ls-fbar.ok { border-color: var(--c-accent); }
+.ls-fbar.bad { border-color: var(--c-brand); }
+.ls-fstate { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: .88rem; padding: 5px 9px; border-radius: 999px; white-space: nowrap; }
+.ls-fstate .ui-ic { width: 15px; height: 15px; }
+.ls-fbar.ok .ls-fstate { background: var(--c-accent-soft); color: var(--c-accent); }
+.ls-fbar.bad .ls-fstate { background: var(--c-brand-soft); color: var(--c-brand); }
+.ls-fname { min-width: 0; font-size: .9rem; overflow-wrap: anywhere; }
+.ls-fname span { font-family: var(--font-mono); font-size: .8rem; color: var(--c-muted); }
+.ls-fkept { display: inline-flex; align-items: center; gap: 4px; font-size: .85rem; color: var(--c-accent); font-weight: 600; }
+.ls-fkept .ui-ic { width: 15px; height: 15px; }
+.ls-fhint { font-size: .82rem; color: var(--c-muted); }
+.ls-flip { display: inline-flex; transform: scaleX(-1); }
+/* labels inside the view: saved lines, boxes and their gaps */
+.ls-measure.saved { background: #fff6cf; border: 1.5px solid #f4d35e; }
+.ls-fit { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; display: grid; gap: 1px; text-align: center; white-space: nowrap;
+  padding: 4px 8px; border-radius: 8px; font: 600 .74rem/1.15 var(--font-body); color: #fff; background: #4f7f6a; box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+  transition: background-color var(--dur-fast) var(--ease-out); }
+.ls-fit.bad { background: #c2522b; }
+.ls-fit.sel { outline: 2px solid #f5efe6; outline-offset: 1px; }
+.ls-fit span { font: 500 .68rem/1 var(--font-mono); opacity: .9; }
+.ls-gap { position: absolute; left: 0; top: 0; font: 600 .7rem/1 var(--font-mono); color: #2a231e; background: #f4d35e; padding: 3px 6px; border-radius: 5px;
+  white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.ls-gap.zero { background: #c2522b; color: #fff; }
+/* the Measurements card (Items/MeasureRow) */
+.anvil-role-sc-meas-list > div { display: grid; gap: 6px; margin-bottom: 10px; }
+.sc-meas { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 10px; border: 1px solid var(--c-line); border-radius: var(--radius-sm); font-size: .92rem; }
+.sc-meas > .ic { color: #b8862b; flex: none; }
+.sc-meas.fit > .ic { color: var(--c-accent); }
+.sc-meas .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.sc-meas .anvil-role-meas-val { display: block; font: 500 .82rem/1.2 var(--font-mono); color: var(--c-muted); }
+.sc-meas-actions, .sc-fix-row { gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.sc-fix-row { margin-top: 10px; }
+.sc-plan-link { margin-bottom: 10px; justify-content: center; }
+/* dialogs: It's really... and Will it fit? */
+.rl-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.rl-row { display: flex; gap: 8px; align-items: center; }
+.rl-row input { max-width: 140px; }
+.rl-row select { max-width: 110px; }
+.rl-u { color: var(--c-muted); font-size: .9rem; }
+.anvil-role-fb-chips { margin: 0 -3px; }
+.anvil-role-fb-chips .flow-panel-item, .anvil-role-fb-chips > div > div { margin: 3px !important; }
+.anvil-role-fb-chip.anvil-role-on > button, .anvil-role-rl-chip:focus-within > button { background: var(--c-brand-soft); border-color: var(--c-brand); color: var(--c-brand); }
+.fb-sizes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.fb-sizes .anvil-role-fb-lbl { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 6px; }
+/* capture: your height */
+.cp-hrow { display: flex; align-items: center; gap: 8px; }
+.cp-hrow input { max-width: 110px; }
+.cp-hrow span { color: var(--c-muted); }
+.cp-height small { display: block; margin-top: 6px; }
+
+/* ===== floor plan sheet (#plan/<token>, ls-plan.js) ===== */
+.pl-wrap { max-width: 1320px; }
+.pl-head { display: grid; gap: 4px; justify-items: start; margin-bottom: 14px; }
+.pl-head .anvil-role-page-title { overflow-wrap: anywhere; }
+.pl-tools { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.pl-tools-main, .pl-tools-adjust { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.pl-cut { display: flex; align-items: center; gap: 8px; font-size: .88rem; color: var(--c-muted); }
+.pl-cut input { width: 130px; accent-color: var(--c-brand); }
+.pl-cut b { font: 600 .82rem/1 var(--font-mono); color: var(--c-ink); min-width: 4.5em; }
+.pl-turn { display: flex; gap: 6px; }
+.pl-sheet { position: relative; min-height: 240px; border-radius: var(--radius); overflow: hidden; background: #f5efe6; box-shadow: var(--shadow-lg);
+  border: 1px solid var(--c-line); }
+.pl-canvas { display: block; width: 100%; height: auto; }
+.pl-load { aspect-ratio: 2400 / 1697; display: grid; place-content: center; justify-items: center; gap: 10px; color: #6e6258; text-align: center; padding: 20px; }
+.pl-load-bar { width: min(240px, 60vw); height: 4px; border-radius: 4px; background: rgba(42, 35, 30, .12); overflow: hidden; }
+.pl-load-bar i { display: block; height: 100%; width: 0; background: #c2522b; transition: width var(--dur-fast) var(--ease-out); }
+.pl-load small { font: 500 .8rem/1.2 var(--font-mono); }
+.pl-error { margin: 0; font-weight: 600; color: #2a231e; }
+.pl-tip { margin-top: 12px; max-width: var(--measure); }
+@media (max-width: 720px) {
+  .pl-tools, .pl-tools-main, .pl-tools-adjust { width: 100%; }
+  .pl-tools-main .anvil-role-btn { flex: 1 1 auto; }
+  .pl-cut { flex: 1; } .pl-cut input { flex: 1; width: auto; min-width: 0; }
+  .fb-sizes { gap: 6px; }
+}
+@media print {
+  @page { size: landscape; margin: 10mm; }
+  html, body { background: #fff !important; }
+  .ui-header, .ui-footer, .ui-tabbar, .pl-noprint, .anvil-alert, [data-notify] { display: none !important; }
+  .ui-main, .pl-wrap.ui-wrap { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+  .pl-sheet { box-shadow: none; border: 0; border-radius: 0; break-inside: avoid; page-break-inside: avoid; }
+  .pl-canvas { width: 100%; max-height: 185mm; object-fit: contain; }
+}

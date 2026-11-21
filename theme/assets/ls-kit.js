@@ -163,13 +163,19 @@
   /* ------------------------------------------------------------------ the 3D view on a page (Components/Viewer)
      LS.mountView(viewEl, barEl, scanJson, optsJson, hooks) loads the room into viewEl (LS.open) and draws the standard
      control bar into barEl (LS.controls). Returns a handle at once; the model loads in the background.
-     opts: {autoRotate}. hooks (Python functions): ready(), pick(pointJson or ''). */
+     opts: {autoRotate, canEdit, keepHint}. hooks (Python functions): ready(), pick(pointJson or ''),
+     measured(action 'save' | 'fix', measureJson), fit() (the Fit button), fits(keptBoxesJson) (owners), units(u). */
   LS.mountView = function (viewEl, barEl, scanJson, optsJson, hooks) {
     var scan = typeof scanJson === 'string' ? JSON.parse(scanJson) : scanJson;
     var opts = optsJson ? JSON.parse(optsJson) : {};
     hooks = hooks || {};
     var h = { v: null, dead: false, picking: false };
-    h.dispose = function () { h.dead = true; if (h.v) { try { h.v.dispose(); } catch (e) { console.error(e); } } h.v = null; };
+    h.dispose = function () {
+      h.dead = true;
+      if (h.unsub) { h.unsub(); h.unsub = null; }
+      if (h.v) { try { h.v.dispose(); } catch (e) { console.error(e); } }
+      h.v = null;
+    };
     h.ready = function () { return !!h.v; };
     LS.open(viewEl, scan, {}).then(function (v) {
       if (h.dead) { v.dispose(); return; }
@@ -178,7 +184,13 @@
         v.controls.autoRotate = true; v.controls.autoRotateSpeed = 0.7;
         v.controls.addEventListener('start', function () { v.controls.autoRotate = false; });
       }
-      LS.controls(barEl, v, scan, {});
+      h.ctl = LS.controls(barEl, v, scan, {
+        onMeasured: opts.canEdit && hooks.measured ? function (action, json) { hooks.measured(action, json); } : null,
+        onFit: hooks.fit ? function () { hooks.fit(); } : null,
+        onFits: opts.canEdit && hooks.fits ? function (json) { hooks.fits(json); } : null,
+        keepHint: opts.keepHint || ''
+      });
+      h.unsub = LS.onUnits(function (u) { if (hooks.units) hooks.units(u); });
       v.onPick = function (p) {
         if (!h.picking) return true;
         h.picking = false; v.renderer.domElement.style.cursor = '';
@@ -194,6 +206,13 @@
       return true;
     };
     h.setPins = function (json) { if (h.v) h.v.setPins(JSON.parse(json || '[]')); };
+    h.setMeasures = function (json) { if (h.v) h.v.setMeasures(JSON.parse(json || '[]')); };
+    h.setScale = function (k) { if (h.v) h.v.setScale(+k || 1); };
+    h.addFit = function (json) { if (!h.v) return false; h.v.addFit(JSON.parse(json)); return true; };
+    h.setFits = function (json) { if (h.v) h.v.setFits(JSON.parse(json || '[]')); };
+    h.getFits = function (keptOnly) { return JSON.stringify(h.v ? h.v.getFits(!!keptOnly) : []); };
+    /* measuring mode on (the "Fix the size" button on the scan page) */
+    h.measure = function () { if (!h.v || !h.ctl) return false; h.ctl.measuring(true); return true; };
     h.thumb = function () { return h.v ? h.v.snapshot(640, 480, true) : ''; };
     /* downloads: kind = cloud | mesh (the PLY files) | glb (made in the browser from what the view shows) */
     h.download = function (kind) {

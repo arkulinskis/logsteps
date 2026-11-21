@@ -186,6 +186,9 @@ def done(token, **ignored):
     if "cloud" not in got:
         return _json({"error": "a point cloud is required"}, 400)
     stats = Scans.clean_stats(b.get("stats"))
+    held = (s["capture"] or {}).get("held")  # the phone height the member gave: the station assumed STATION_EYE
+    if isinstance(held, (int, float)) and Scans.K_MIN <= held / Scans.STATION_EYE <= Scans.K_MAX:
+        stats["kh"] = round(held / Scans.STATION_EYE, 4)
     note = "Reconstructed with lingbot-map" + (" (%s)" % C.text(b.get("model"), 40) if b.get("model") else "")
     Scans.add_version(s, s["owner"], "station", note, cloud=got.get("cloud"), mesh=got.get("mesh"), stats=stats)
     try:

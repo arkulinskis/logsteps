@@ -53,14 +53,18 @@ client_code/
                  Auth, Admin (overview, scans, station, feedback, users, demo)
   Components/    Viewer (scan + share pages: room view + control bar; events ready, picked; pick() = next tap is a pin)
                  Screen (Capture, Studio: the whole editor is one engine screen)
-  Items/         room cards, admin rows, FeedbackRow, NavLink ...   Dialogs/  PinEdit, Reprocess
+  Items/         room cards, admin rows, FeedbackRow, NavLink, MeasureRow ...
+  Dialogs/       PinEdit, Reprocess, RealLength ("It's really…"), FitBox ("Will it fit?")
+  Pages/Plan     #plan/<token>: the floor plan sheet (LS.planSheet in ls-plan.js), print / PDF / PNG
 server_code/     Scans.py (library, capture create_scan/add_frames/finish_capture, scan page, versions, uploads in
                  parts), Share.py (get_shared, list_explore, toggle_heart, remix), Files.py (GET
                  _/api/file/<token>/<what>?t=<ticket>, signed + expiring), Station.py (the station's HTTP endpoints
                  _/api/station/..., Bearer key + admin station_*), DemoData.py, DemoScenes.py (generated), Accounts,
                  Admin, Feedback, common.py, SchemaCheck, legal_server, seo_routes
-theme/assets/    ls-viewer.js (LS.Viewer: orbit/walk/plan, replay, measure, pins, cut, snapshot; LS.controls,
-                 LS.writePLY), ls-cards.js (LS.roomArt, LS.ROOMS), ls-screens.js (Capture + Studio editors),
+theme/assets/    ls-viewer.js (LS.Viewer: orbit/walk/plan, replay, measure + saved lines, size fix V.k, fit boxes,
+                 pins, cut, snapshot; LS.controls with the measure bar + fit bar; LS.units/fmtLen/fmtDim/fmtArea/fmtBox,
+                 LS.writePLY), ls-plan.js (floor plan sheet), qrcode.js (qrcode-generator 1.4.4, MIT, loaded on the
+                 plan page only), ls-cards.js (LS.roomArt, LS.ROOMS), ls-screens.js (Capture + Studio editors),
                  ls-kit.js (the old window.UI helpers the engines need, UI.page/UI.mountScreen, LS.mountView),
                  three-r147.js (+ OrbitControls, PLYLoader, GLTFLoader, GLTFExporter), demo-*.ply/jpg,
                  logsteps_station.txt (station download), app.css, app-kit.js, theme.css
@@ -72,7 +76,7 @@ tools/           check.py, assets.py, make_demo_scans.py, make_icons.py, build_i
 samples_given, legal_*), `app_settings`, `feedback`, `scans` (owner, title, room, status
 capturing|queued|processing|ready|failed, stage, progress, visibility private|link|public, token, source
 capture|video|import|remix|sample, settings, current -> scan_versions, cover, thumb, path, annotations, views, hearts,
-is_demo ...), `scan_frames` (scan, idx, image JPEG), `scan_versions` (n, source, note, cloud PLY, mesh PLY, stats,
+is_demo, extras {measures, fits} ...), `scan_frames` (scan, idx, image JPEG), `scan_versions` (n, source, note, cloud PLY, mesh PLY, stats,
 author), `uploads` (parts: "u:<user>:<kind>:<rand>" from the browser, "st:<token>:<kind>" from the station), `hearts`.
 
 ## How things are done here
@@ -105,6 +109,22 @@ author), `uploads` (parts: "u:<user>:<kind>:<rand>" from the browser, "st:<token
   DemoData.DEMO_SCANS has pins/visibility/views.
 - **Capture tests:** `?fakecam=1` swaps the camera for a moving canvas; `window.LS_CAPTURE.toggle()` starts/stops.
   Studio exposes `window.LS_STUDIO` (selectHeight, deleteSel, setTool, undo, stats).
+
+- **Sizes and the size fix:** geometry files are never rescaled for a correction. `Scans.scale_info` gives the
+  factor k from the current version's stats: `kh` (phone height given at capture / STATION_EYE 1.4, written by
+  Station.done) or `k` + `ref` {label, real, raw} ("It's really…", `set_scale` / `clear_scale`, 0.5-2.0). `card()` and
+  `detail()` return size x k and area x k^2, plus `scale_k`, `scale_ref`, `scale_source` (phone | height | the row's
+  value). Viewer: `V.setScale(k)`; Studio bakes k into the points on load (`transformAll(makeScale(k))`), so a saved
+  version has it built in (clean_stats drops k/kh).
+- **Measurements and furniture boxes** live in `scans.extras` ({measures: [{a, b, label}], fits: [{label, w, d, h, x,
+  z, a}]}): points in file coordinates, box sizes in real metres. Always read with `Scans.extras_of(row)` and write
+  with `Scans.set_extras(row, ...)` (both survive a database that doesn't have the column yet). Studio carries them
+  through its edits (`extras` in transformAll/snapshot) and sends them with `upload_finish`.
+- **Units:** `LS.units` ('m' | 'ft', localStorage `ls.units`); every length goes through `LS.fmtLen` / `ls.fmt_len`
+  (Python), sizes through `ls.fmt_m`, areas `ls.fmt_area`, boxes `ls.fmt_box`. Pages redraw on the Viewer's
+  `units_changed` event.
+- **Plan sheet:** `get_plan(token)` = the share rules (`_shared_scan`) without counting a view. `window.LS_PLAN`
+  (angle(), wd(), png(), canvas, error) for tests; the smoke test opens the demo loft's plan and expects ~0°.
 
 ## Gotchas
 

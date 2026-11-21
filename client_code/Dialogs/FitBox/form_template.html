@@ -1,0 +1,23 @@
+<div class="ui fb-dlg">
+  <anvil-component type="Label" name="heading" prop:text="Will it fit?" prop:role='["dlg-title"]'></anvil-component>
+  <anvil-component type="Label" name="intro" prop:text="Pick a piece of furniture or type its size. A see-through box lands on the floor: drag it around and turn it. Sage means it fits; terracotta means it touches something." prop:role='["muted-text"]'></anvil-component>
+  <div class="ui-stack">
+    <anvil-component type="FlowPanel" name="chips" prop:role='["fb-chips"]'></anvil-component>
+    <label class="ui-field"><span>Name</span>
+      <anvil-component type="TextBox" name="label_box" prop:placeholder="e.g. New sofa"></anvil-component>
+    </label>
+    <div class="fb-sizes">
+      <label class="ui-field"><anvil-component type="Label" name="w_lbl" prop:role='["fb-lbl"]'></anvil-component>
+        <anvil-component type="TextBox" name="w_box" prop:type="number"></anvil-component></label>
+      <label class="ui-field"><anvil-component type="Label" name="d_lbl" prop:role='["fb-lbl"]'></anvil-component>
+        <anvil-component type="TextBox" name="d_box" prop:type="number"></anvil-component></label>
+      <label class="ui-field"><anvil-component type="Label" name="h_lbl" prop:role='["fb-lbl"]'></anvil-component>
+        <anvil-component type="TextBox" name="h_box" prop:type="number"></anvil-component></label>
+    </div>
+    <anvil-component type="Label" name="message" prop:role='["msg-error"]' prop:visible="false"></anvil-component>
+    <div class="ui-row end">
+      <anvil-component type="Button" name="cancel_button" prop:text="Cancel" prop:role='["btn", "btn-ghost"]'></anvil-component>
+      <anvil-component type="Button" name="place_button" prop:text="Place it" prop:role='["btn", "btn-primary", "ic-box"]'></anvil-component>
+    </div>
+  </div>
+</div>

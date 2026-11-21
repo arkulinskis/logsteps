@@ -1,0 +1,41 @@
+<anvil-form layout="Logsteps.Layouts.Shell">
+  <anvil-block slot="content">
+    <div class="ui-wrap pl-wrap">
+      <div class="ui-empty" anvil:name="not_shared">
+        <i class="ic ic-lock"></i>
+        <h2>This room isn't shared</h2>
+        <anvil-component type="Label" name="not_shared_text"></anvil-component>
+        <a class="ui-btn primary" href="#explore"><i class="ic ic-globe"></i>Explore public rooms</a>
+      </div>
+      <div anvil:name="plan_part">
+        <div class="pl-head pl-noprint">
+          <a class="ui-btn ghost sm" anvil:name="back_link" href="#explore"><i class="ic ic-back"></i>Back to the 3D room</a>
+          <anvil-component type="Label" name="title" prop:role='["page-title"]'></anvil-component>
+          <anvil-component type="Label" name="sub" prop:role='["fine-print"]'></anvil-component>
+        </div>
+        <div class="pl-tools pl-noprint">
+          <div class="pl-tools-main">
+            <anvil-component type="Button" name="print_button" prop:text="Print / Save as PDF" prop:role='["btn", "btn-primary", "ic-print"]'></anvil-component>
+            <anvil-component type="Button" name="png_button" prop:text="Download PNG" prop:role='["btn", "ic-download"]'></anvil-component>
+            <div class="ui-seg" role="group" aria-label="Units">
+              <anvil-component type="Button" name="u_m" prop:text="m" prop:role='["seg"]'></anvil-component>
+              <anvil-component type="Button" name="u_ft" prop:text="ft·in" prop:role='["seg"]'></anvil-component>
+            </div>
+          </div>
+          <div class="pl-tools-adjust">
+            <label class="pl-cut"><span>Walls cut at</span>
+              <input type="range" min="0.3" max="2" step="0.1" value="1" aria-label="Height of the wall slice" anvil:dom-node="cut">
+              <b anvil:dom-node="cut_text">1.0 m</b></label>
+            <div class="pl-turn" role="group" aria-label="Straighten the plan">
+              <anvil-component type="Button" name="turn_left" prop:text="1°" prop:tooltip="Turn the plan 1° to the left" prop:role='["btn", "btn-sm", "ic-undo"]'></anvil-component>
+              <anvil-component type="Button" name="turn_right" prop:text="1°" prop:tooltip="Turn the plan 1° to the right" prop:role='["btn", "btn-sm", "ic-redo"]'></anvil-component>
+              <anvil-component type="Button" name="turn_90" prop:text="90°" prop:tooltip="Turn the sheet a quarter" prop:role='["btn", "btn-sm", "ic-rotate"]'></anvil-component>
+            </div>
+          </div>
+        </div>
+        <div class="pl-sheet" anvil:dom-node="sheet"></div>
+        <p class="small muted pl-noprint pl-tip">Free, like every Logsteps export. Walls come from a slice of the points, so open doors and windows show as gaps. Sizes are as good as the room's scale: fix it with “It's really…” on the room page.</p>
+      </div>
+    </div>
+  </anvil-block>
+</anvil-form>

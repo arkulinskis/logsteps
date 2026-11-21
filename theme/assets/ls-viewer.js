@@ -53,13 +53,50 @@
     return LS.loadThree().then(function () { return LS.fetchBuffer(url, onProg); }).then(LS.parsePLY);
   };
 
-  LS.fmtLen = function (m) {
+  /* Lengths in the chosen units: 'm' (metric) or 'ft' (feet and inches), remembered per browser. Every length the app
+     shows goes through these (the Python pages too, via client_code/ls.py). */
+  LS.units = (function () { try { return localStorage.getItem('ls.units') === 'ft' ? 'ft' : 'm'; } catch (e) { return 'm'; } })();
+  LS._unitWatchers = [];
+  LS.setUnits = function (u) {
+    LS.units = u === 'ft' ? 'ft' : 'm';
+    try { localStorage.setItem('ls.units', LS.units); } catch (e) { /* private window */ }
+    LS._unitWatchers.slice().forEach(function (fn) { try { fn(LS.units); } catch (e) { console.error(e); } });
+  };
+  LS.onUnits = function (fn) {
+    LS._unitWatchers.push(fn);
+    return function () { LS._unitWatchers = LS._unitWatchers.filter(function (f) { return f !== fn; }); };
+  };
+  /* 2.032 -> 6′ 8″, 0.29 -> 11½″ (to the nearest half inch) */
+  LS.ftIn = function (m) {
+    var halves = Math.round(Math.abs(m) / 0.0254 * 2), inches = halves / 2, ft = Math.floor(inches / 12), rest = inches - ft * 12;
+    var whole = Math.floor(rest), half = rest - whole >= 0.5 ? '½' : '', sign = m < 0 ? '−' : '';
+    var inText = (whole ? String(whole) : '') + half;
+    if (!ft) return sign + (inText || '0') + '″';
+    return sign + ft + '′' + (inText ? ' ' + inText + '″' : '');
+  };
+  LS.fmtLen = function (m, units) {
     if (m == null || isNaN(m)) return '';
+    if ((units || LS.units) === 'ft') return LS.ftIn(m);
     var a = Math.abs(m);
     return a < 1 ? Math.round(m * 100) + ' cm' : (Math.round(m * 100) / 100).toFixed(2) + ' m';
   };
+  /* a room size number: '4.80' (metres, the unit is shown beside it) or '15′ 9″' */
+  LS.fmtDim = function (m) { return m == null || isNaN(m) ? '' : LS.units === 'ft' ? LS.ftIn(m) : (+m).toFixed(2); };
+  LS.fmtArea = function (a) {
+    if (a == null || isNaN(a)) return '';
+    return LS.units === 'ft' ? '≈ ' + Math.round(a * 10.7639).toLocaleString() + ' ft²' : '≈ ' + (Math.round(a * 10) / 10) + ' m²';
+  };
+  /* furniture: '220 × 95 × 85 cm' or '7′ 2½″ × 3′ 1½″ × 2′ 9½″' */
+  LS.fmtBox = function (w, d, h) {
+    var dims = [w, d, h].filter(function (x) { return x != null; });
+    if (LS.units === 'ft') return dims.map(LS.ftIn).join(' × ');
+    return dims.map(function (x) { return Math.round(x * 100); }).join(' × ') + ' cm';
+  };
   LS.fmtNum = function (n) { return (n || 0).toLocaleString(); };
-  LS.fmtSize = function (s) { return s && s.length === 3 ? s[0].toFixed(1) + ' × ' + s[1].toFixed(1) + ' × ' + s[2].toFixed(1) + ' m' : ''; };
+  LS.fmtSize = function (s) {
+    if (!s || s.length !== 3) return '';
+    return LS.units === 'ft' ? s.map(LS.ftIn).join(' × ') : s[0].toFixed(1) + ' × ' + s[1].toFixed(1) + ' × ' + s[2].toFixed(1) + ' m';
+  };
 
   /* colours live in linear space in three.js (PLYLoader converts); files store sRGB bytes */
   var SRGB = new Uint8Array(4097);
@@ -142,6 +179,11 @@
     V.dot = dotTexture();
     V.state = { mode: 'orbit', display: 'points', color: 'photo', cut: opts.cut !== false, size: 1, measuring: false };
     V.pins = []; V.measures = []; V.pending = null;
+    V.k = 1;               /* size fix: real length = length in the file x k ("It's really..." on the scan page) */
+    V.saved = [];          /* saved measurements (yellow lines with a label) */
+    V.fits = []; V.sel = null; V._drag = null;   /* "Will it fit?" furniture boxes */
+    V.fitGroup = new T.Group(); V.scene.add(V.fitGroup);
+    V._unsubUnits = LS.onUnits(function () { V._relabel(); });
     V.keys = {}; V.walk = { yaw: 0, pitch: 0, move: [0, 0] };
     V.replay = null;
     V.clock = new T.Clock();
@@ -198,6 +240,7 @@
       V.layers[pair[0]] = { geom: g, obj: obj };
       V.group.add(obj);
     });
+    V._floorY = null;
     if (!V.layers.points && V.layers.surface) V.state.display = 'surface';
     if (V.layers.points && !V.layers.surface && V.state.display === 'surface') V.state.display = 'points';
     V.measureBounds();
@@ -413,6 +456,41 @@
     };
     V._ku = function (e) { V.keys[(e.key || '').toLowerCase()] = false; V.keys.shift = e.shiftKey; };
     window.addEventListener('keydown', V._kd); window.addEventListener('keyup', V._ku);
+    /* furniture boxes: a press on a box drags it along the floor (Orbit and Plan); the room view doesn't turn meanwhile */
+    V.el.addEventListener('pointerdown', function (e) {
+      if (!V.fits.length || e.target !== c || V.state.mode === 'walk' || V.replay || V.state.measuring) return;
+      var f = V._hitFit(e.clientX, e.clientY);
+      if (!f) return;
+      e.stopPropagation(); e.preventDefault();
+      V.selectFit(f);
+      var p = V._floorPoint(e.clientX, e.clientY);
+      if (!p) return;
+      V._drag = { f: f, id: e.pointerId, dx: f.group.position.x - p.x, dz: f.group.position.z - p.z, t: 0, moved: false };
+      try { V.el.setPointerCapture(e.pointerId); } catch (err) { /* old browsers */ }
+    }, true);
+    V.el.addEventListener('pointermove', function (e) {
+      var d = V._drag;
+      if (!d || e.pointerId !== d.id) return;
+      e.stopPropagation();
+      var p = V._floorPoint(e.clientX, e.clientY);
+      if (!p) return;
+      var b = V.box, pad = 1;
+      d.f.group.position.x = Math.max(b.min.x - pad, Math.min(b.max.x + pad, p.x + d.dx));
+      d.f.group.position.z = Math.max(b.min.z - pad, Math.min(b.max.z + pad, p.z + d.dz));
+      d.moved = true; V.needs = true;
+      var now = performance.now();
+      if (now - d.t > 125) { d.t = now; V.checkFit(d.f); V._fitChanged(d.f, false); }   /* about 8 times a second */
+    }, true);
+    function endDrag(e) {
+      var d = V._drag;
+      if (!d || e.pointerId !== d.id) return;
+      e.stopPropagation();
+      V._drag = null;
+      try { V.el.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
+      V.checkFit(d.f); V._fitChanged(d.f, d.moved);
+    }
+    V.el.addEventListener('pointerup', endDrag, true);
+    V.el.addEventListener('pointercancel', endDrag, true);
     V.controls.addEventListener('change', function () { V.needs = true; });
     V.orthoControls.addEventListener('change', function () { if (V._lastZoom !== V.ortho.zoom) { V._lastZoom = V.ortho.zoom; V.setPointSize(V.state.size); } V.needs = true; });
   };
@@ -452,11 +530,52 @@
     var g = new T.BufferGeometry().setFromPoints([a, b]);
     var line = new T.Line(g, new T.LineBasicMaterial({ color: 0xf4d35e, depthTest: false }));
     line.renderOrder = 9; this.helpers.add(line);
-    var label = document.createElement('div'); label.className = 'ls-measure'; label.textContent = LS.fmtLen(a.distanceTo(b));
+    var label = document.createElement('div'); label.className = 'ls-measure'; label.textContent = LS.fmtLen(a.distanceTo(b) * this.k);
     this.overlay.appendChild(label);
     this.measures.push({ a: a, b: b, line: line, label: label, mid: a.clone().add(b).multiplyScalar(0.5) });
-    if (this.onMeasure) this.onMeasure(a.distanceTo(b));
+    if (this.onMeasure) this.onMeasure(a, b, a.distanceTo(b));
     this.needs = true;
+  };
+
+  /* Saved measurements: [{a: [x,y,z], b: [x,y,z], label}] in the file's coordinates */
+  Viewer.prototype.setMeasures = function (list) {
+    var V = this, T = THREE;
+    V.saved.forEach(function (m) { V.helpers.remove(m.line); m.ends.forEach(function (e) { V.helpers.remove(e); }); m.label.remove(); });
+    V.saved = (list || []).map(function (s) {
+      var a = new T.Vector3(s.a[0], s.a[1], s.a[2]), b = new T.Vector3(s.b[0], s.b[1], s.b[2]);
+      var line = new T.Line(new T.BufferGeometry().setFromPoints([a, b]), new T.LineBasicMaterial({ color: 0xf4d35e, depthTest: false }));
+      line.renderOrder = 9; V.helpers.add(line);
+      var r = Math.max(V.span * 0.004, 0.012), ends = [a, b].map(function (p) {
+        var e = new T.Mesh(new T.SphereGeometry(r, 10, 6), new T.MeshBasicMaterial({ color: 0xf4d35e, depthTest: false }));
+        e.renderOrder = 10; e.position.copy(p); V.helpers.add(e); return e;
+      });
+      var label = document.createElement('div'); label.className = 'ls-measure saved';
+      V.overlay.appendChild(label);
+      return { a: a, b: b, line: line, ends: ends, label: label, name: s.label || '', mid: a.clone().add(b).multiplyScalar(0.5) };
+    });
+    V._relabel();
+  };
+
+  /* the size fix: every length shown = length in the file x k (the file itself never changes) */
+  Viewer.prototype.setScale = function (k) {
+    var V = this;
+    V.k = k > 0 ? k : 1;
+    V.fits.forEach(function (f) { V._sizeFit(f); V.checkFit(f); });
+    if (V.sel) V._drawGaps(V.sel);
+    V._relabel();
+  };
+
+  Viewer.prototype._relabel = function () {
+    var V = this;
+    V.measures.forEach(function (m) { m.label.textContent = LS.fmtLen(m.a.distanceTo(m.b) * V.k); });
+    V.saved.forEach(function (m) {
+      var len = LS.fmtLen(m.a.distanceTo(m.b) * V.k);
+      m.label.textContent = m.name ? m.name + ' · ' + len : len;
+    });
+    V.fits.forEach(function (f) { V._fitLabel(f); });
+    if (V.sel) V._drawGaps(V.sel);
+    if (V.onRelabel) V.onRelabel();
+    V.needs = true;
   };
 
   Viewer.prototype.clearMeasures = function () {
@@ -470,6 +589,170 @@
     this.state.measuring = !!on; this.pending = null;
     this.renderer.domElement.style.cursor = on ? 'crosshair' : '';
     if (on) this.hint('Measure: tap two points in the room.');
+  };
+
+  /* --------------------------------------------------- "Will it fit?" furniture boxes
+     spec: {label, w, d, h} in real metres, plus x, z (on the floor, file coordinates), a (turn in degrees) and kept.
+     A box is drawn at its real size / k, so a 2 m sofa stays 2 m when the size fix changes. checkFit counts the points
+     inside the box (shrunk by 2 cm, ignoring the floor) and finds the nearest point beyond each side. */
+  var FIT_OK = 0x4f7f6a, FIT_BAD = 0xc2522b;
+  function rayFrom(V, cx, cy) {
+    var T = THREE, r = V.renderer.domElement.getBoundingClientRect(), rc = new T.Raycaster();
+    rc.setFromCamera(new T.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), V.active);
+    return rc;
+  }
+  function push3(arr, v) {
+    if (arr.length < 3) { arr.push(v); arr.sort(function (a, b) { return a - b; }); }
+    else if (v < arr[2]) { arr[2] = v; arr.sort(function (a, b) { return a - b; }); }
+  }
+  Viewer.prototype.floorY = function () {
+    if (this._floorY != null) return this._floorY;
+    var l = this.layers && (this.layers.points || this.layers.surface);
+    if (!l) return 0;
+    var p = l.geom.attributes.position.array, n = l.geom.attributes.position.count, step = Math.max(1, Math.floor(n / 20000)), ys = [];
+    for (var i = 0; i < n; i += step) ys.push(p[i * 3 + 1]);
+    ys.sort(function (a, b) { return a - b; });
+    this._floorY = ys.length ? ys[Math.floor(ys.length * 0.02)] : 0;
+    return this._floorY;
+  };
+  Viewer.prototype._floorPoint = function (cx, cy) {
+    var T = THREE;
+    return rayFrom(this, cx, cy).ray.intersectPlane(new T.Plane(new T.Vector3(0, 1, 0), -this.floorY()), new T.Vector3());
+  };
+  Viewer.prototype._hitFit = function (cx, cy) {
+    var hits = rayFrom(this, cx, cy).intersectObjects(this.fits.map(function (f) { return f.mesh; }), false);
+    if (!hits.length) return null;
+    var m = hits[0].object;
+    return this.fits.filter(function (f) { return f.mesh === m; })[0] || null;
+  };
+  Viewer.prototype.addFit = function (spec, opts) {
+    var V = this, T = THREE;
+    opts = opts || {};
+    var unit = new T.BoxGeometry(1, 1, 1);
+    unit.translate(0, 0.5, 0);  /* sits on the floor */
+    var mesh = new T.Mesh(unit, new T.MeshBasicMaterial({ color: FIT_OK, transparent: true, opacity: 0.26, depthWrite: false, side: T.DoubleSide }));
+    var edges = new T.LineSegments(new T.EdgesGeometry(unit), new T.LineBasicMaterial({ color: FIT_OK }));
+    mesh.renderOrder = 6; edges.renderOrder = 7;
+    var group = new T.Group(); group.add(mesh); group.add(edges);
+    var x = spec.x, z = spec.z;
+    if (x == null || z == null) {  /* a new box: on the floor in the middle of the view, else the middle of the room */
+      var r = V.renderer.domElement.getBoundingClientRect(), c = V.box.getCenter(new T.Vector3());
+      var p = V._floorPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (!p || p.x < V.box.min.x || p.x > V.box.max.x || p.z < V.box.min.z || p.z > V.box.max.z) p = c;
+      x = p.x; z = p.z;
+    }
+    group.position.set(x, V.floorY(), z);
+    group.rotation.y = (spec.a || 0) * Math.PI / 180;
+    V.fitGroup.add(group);
+    var label = document.createElement('div');
+    V.overlay.appendChild(label);
+    var f = { spec: { label: String(spec.label || 'Box').slice(0, 40), w: +spec.w, d: +spec.d, h: +spec.h }, group: group, mesh: mesh,
+              edges: edges, label: label, kept: !!spec.kept, clear: true, gaps: {}, gapLines: null, gapLabels: [] };
+    label.addEventListener('click', function (e) { e.stopPropagation(); V.selectFit(f); });
+    V.fits.push(f);
+    V._sizeFit(f);
+    V.checkFit(f);
+    if (opts.select !== false) V.selectFit(f);
+    V.needs = true;
+    return f;
+  };
+  Viewer.prototype._sizeFit = function (f) {
+    var k = this.k;
+    [f.mesh, f.edges].forEach(function (o) { o.scale.set(f.spec.w / k, f.spec.h / k, f.spec.d / k); });
+    this.needs = true;
+  };
+  Viewer.prototype._fitLabel = function (f) {
+    f.label.className = 'ls-fit ' + (f.clear ? 'ok' : 'bad') + (f === this.sel ? ' sel' : '');
+    f.label.innerHTML = '<b>' + UI.esc(f.spec.label) + '</b><span>' + UI.esc(LS.fmtBox(f.spec.w, f.spec.d)) + '</span>';
+  };
+  Viewer.prototype.checkFit = function (f) {
+    var V = this, l = V.layers && (V.layers.points || V.layers.surface);
+    if (!l) return;
+    var k = V.k, hw = f.spec.w / k / 2, hd = f.spec.d / k / 2, y0 = V.floorY(), lo = y0 + 0.04 / k, hi = y0 + f.spec.h / k;
+    var m = 0.02 / k, reach = 4 / k, th = f.group.rotation.y, c = Math.cos(th), s = Math.sin(th);
+    var cx = f.group.position.x, cz = f.group.position.z;
+    var p = l.geom.attributes.position.array, n = l.geom.attributes.position.count, step = n > 300000 ? Math.ceil(n / 300000) : 1;
+    var inside = 0, seen = 0, best = { '+x': [], '-x': [], '+z': [], '-z': [] };
+    for (var i = 0; i < n; i += step) {
+      seen++;
+      var y = p[i * 3 + 1];
+      if (y < lo || y > hi) continue;
+      var dx = p[i * 3] - cx, dz = p[i * 3 + 2] - cz, lx = dx * c - dz * s, lz = dx * s + dz * c, ax = Math.abs(lx), az = Math.abs(lz);
+      if (ax < hw - m && az < hd - m) { inside++; continue; }
+      if (az < hd - m && ax < hw + reach) push3(best[lx > 0 ? '+x' : '-x'], ax - hw);
+      else if (ax < hw - m && az < hd + reach) push3(best[lz > 0 ? '+z' : '-z'], az - hd);
+    }
+    f.inside = inside;
+    f.clear = inside < Math.max(12, seen * 0.0004);  /* a few stray points don't count; a wall or a table does */
+    f.gaps = {};
+    Object.keys(best).forEach(function (key) { var a = best[key]; if (a.length >= 3) f.gaps[key] = Math.max(0, a[2]); });
+    var col = f.clear ? FIT_OK : FIT_BAD;
+    f.mesh.material.color.setHex(col); f.edges.material.color.setHex(col);
+    V._fitLabel(f);
+    if (V.sel === f) V._drawGaps(f);
+    V.needs = true;
+  };
+  Viewer.prototype._drawGaps = function (f) {
+    var V = this, T = THREE;
+    V.fits.forEach(function (o) {
+      if (o.gapLines) { o.group.remove(o.gapLines); o.gapLines.geometry.dispose(); o.gapLines = null; }
+      o.gapLabels.forEach(function (g) { g.el.remove(); }); o.gapLabels = [];
+    });
+    if (!f) return;
+    var k = V.k, hw = f.spec.w / k / 2, hd = f.spec.d / k / 2, y = 0.02 / k, pts = [];
+    [['+x', 1, 0, hw], ['-x', -1, 0, hw], ['+z', 0, 1, hd], ['-z', 0, -1, hd]].forEach(function (sd) {
+      var g = f.gaps[sd[0]];
+      if (g == null) return;
+      var a = new T.Vector3(sd[1] * sd[3], y, sd[2] * sd[3]), b = new T.Vector3(sd[1] * (sd[3] + g), y, sd[2] * (sd[3] + g));
+      if (g * k >= 0.01) pts.push(a, b);
+      var el = document.createElement('div');
+      el.className = 'ls-gap' + (g * k < 0.01 ? ' zero' : '');
+      el.textContent = g * k < 0.01 ? 'touching' : LS.fmtLen(g * k);
+      V.overlay.appendChild(el);
+      f.gapLabels.push({ el: el, p: a.clone().add(b).multiplyScalar(0.5) });
+    });
+    if (pts.length) {
+      f.gapLines = new T.LineSegments(new T.BufferGeometry().setFromPoints(pts),
+        new T.LineDashedMaterial({ color: 0xf4d35e, dashSize: 0.05 / k, gapSize: 0.035 / k, depthTest: false }));
+      f.gapLines.computeLineDistances(); f.gapLines.renderOrder = 8;
+      f.group.add(f.gapLines);
+    }
+    V.needs = true;
+  };
+  Viewer.prototype.selectFit = function (f) {
+    var V = this;
+    V.sel = f || null;
+    V.fits.forEach(function (o) { V._fitLabel(o); });
+    V._drawGaps(V.sel);
+    if (V.onFitSelect) V.onFitSelect(V.sel);
+  };
+  Viewer.prototype.rotateFit = function (f, deg) {
+    f.group.rotation.y = ((f.group.rotation.y + deg * Math.PI / 180) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    this.checkFit(f);
+    this._fitChanged(f, true);
+  };
+  Viewer.prototype.removeFit = function (f) {
+    var V = this;
+    V.fitGroup.remove(f.group);
+    f.label.remove(); f.gapLabels.forEach(function (g) { g.el.remove(); });
+    V.fits = V.fits.filter(function (o) { return o !== f; });
+    if (V.sel === f) V.selectFit(null);
+    V.needs = true;
+  };
+  Viewer.prototype._fitChanged = function (f, final) { if (this.onFitChange) this.onFitChange(f, final); };
+  Viewer.prototype.fitSpec = function (f) {
+    var deg = Math.round(f.group.rotation.y * 180 / Math.PI * 10) / 10;
+    return { label: f.spec.label, w: f.spec.w, d: f.spec.d, h: f.spec.h, x: Math.round(f.group.position.x * 10000) / 10000,
+             z: Math.round(f.group.position.z * 10000) / 10000, a: ((deg % 360) + 360) % 360, kept: f.kept, clear: f.clear };
+  };
+  Viewer.prototype.getFits = function (keptOnly) {
+    var V = this;
+    return V.fits.filter(function (f) { return !keptOnly || f.kept; }).map(function (f) { return V.fitSpec(f); });
+  };
+  Viewer.prototype.setFits = function (list) {
+    var V = this;
+    V.fits.slice().forEach(function (f) { V.removeFit(f); });
+    (list || []).forEach(function (s) { V.addFit(Object.assign({}, s, { kept: true }), { select: false }); });
   };
 
   /* --------------------------------------------------- pins (annotations) */
@@ -497,16 +780,26 @@
       p.el.style.display = hide ? 'none' : '';
       if (!hide) p.el.style.transform = 'translate(' + ((v.x + 1) / 2 * w) + 'px,' + ((1 - v.y) / 2 * h) + 'px) translate(-50%,-100%)';
     });
-    V.measures.forEach(function (m) {
-      v.copy(m.mid).project(cam);
-      var hide = v.z > 1;
-      m.label.style.display = hide ? 'none' : '';
-      m.label.style.transform = 'translate(' + ((v.x + 1) / 2 * w) + 'px,' + ((1 - v.y) / 2 * h) + 'px) translate(-50%,-50%)';
+    function at(el, p, hideOff) {
+      v.copy(p).project(cam);
+      var hide = v.z > 1 || (hideOff && (Math.abs(v.x) > 1.2 || Math.abs(v.y) > 1.2));
+      el.style.display = hide ? 'none' : '';
+      if (!hide) el.style.transform = 'translate(' + ((v.x + 1) / 2 * w) + 'px,' + ((1 - v.y) / 2 * h) + 'px) translate(-50%,-50%)';
+    }
+    V.measures.forEach(function (m) { at(m.label, m.mid); });
+    V.saved.forEach(function (m) { at(m.label, m.mid); });
+    var top = new THREE.Vector3();
+    V.fits.forEach(function (f) {
+      f.group.updateMatrixWorld();
+      top.set(0, f.mesh.scale.y + 0.05, 0); f.group.localToWorld(top);
+      at(f.label, top, true);
+      f.gapLabels.forEach(function (g) { at(g.el, f.group.localToWorld(g.p.clone()), true); });
     });
     if (V.scaleEl && V.state.mode === 'plan') {
-      var unitsPerPx = (V.ortho.right - V.ortho.left) / V.ortho.zoom / w;
-      var nice = [0.1, 0.25, 0.5, 1, 2, 5, 10, 20].filter(function (x) { return x / unitsPerPx < 140; }).pop() || 0.1;
-      V.scaleEl.innerHTML = '<i style="width:' + Math.round(nice / unitsPerPx) + 'px"></i>' + LS.fmtLen(nice);
+      var realPerPx = (V.ortho.right - V.ortho.left) / V.ortho.zoom / w * V.k, ft = LS.units === 'ft';
+      var steps = ft ? [0.5, 1, 2, 5, 10, 20, 50].map(function (x) { return x * 0.3048; }) : [0.1, 0.25, 0.5, 1, 2, 5, 10, 20];
+      var nice = steps.filter(function (x) { return x / realPerPx < 140; }).pop() || steps[0];
+      V.scaleEl.innerHTML = '<i style="width:' + Math.round(nice / realPerPx) + 'px"></i>' + LS.fmtLen(nice);
     }
   };
 
@@ -626,6 +919,8 @@
   Viewer.prototype.dispose = function () {
     var V = this;
     V.alive = false;
+    if (V._unsubUnits) V._unsubUnits();
+    V.fits.forEach(function (f) { f.label.remove(); f.gapLabels.forEach(function (g) { g.el.remove(); }); });
     window.removeEventListener('keydown', V._kd); window.removeEventListener('keyup', V._ku);
     if (V.ro) V.ro.disconnect(); else window.removeEventListener('resize', V._resize);
     V.controls.dispose(); V.orthoControls.dispose();
@@ -670,6 +965,11 @@
       v.setModel(g[0], g[1]);
       v.setPath(scan.path || []);
       if (scan.annotations) v.setPins(scan.annotations, opts.onPin);
+      if (opts.extras !== false) {   /* Studio passes extras: false (it bakes the fix into the points) */
+        v.setScale(scan.scale_k || 1);
+        v.setMeasures(scan.measures || []);
+        v.setFits(scan.fits || []);
+      }
       v.fit();
       load.done();
       return v;
@@ -687,18 +987,90 @@
       '<button data-mode="plan" title="Floor plan from above">' + ic('plan') + '<span class="lbl">Plan</span></button></div>' +
       (hasPath ? '<button class="ui-btn sm" data-replay title="Replay the walk the phone took">' + ic('play') + '<span class="lbl">Replay</span></button>' : '') +
       '<button class="ui-btn sm" data-measure title="Measure a distance">' + ic('ruler') + '<span class="lbl">Measure</span></button>' +
+      (opts.onFit ? '<button class="ui-btn sm" data-fit title="Will it fit? Try a furniture box">' + ic('box') + '<span class="lbl">Fit</span></button>' : '') +
       '<span class="grow"></span>' +
       '<div class="ls-more"><button class="ui-btn sm" data-more aria-haspopup="true" title="Display settings">' + ic('sliders') + '<span class="lbl">Display</span></button></div>' +
       '<button class="ui-btn sm icon" data-shot title="Save a picture">' + ic('image') + '</button>' +
       '<button class="ui-btn sm icon" data-full title="Full screen">' + ic('expand') + '</button>' +
-      '</div><div data-replaybox></div>';
+      '</div><div data-replaybox></div><div data-mbox></div><div data-fitbox></div>';
     var bar = host.querySelector('.ls-bar'), rbox = host.querySelector('[data-replaybox]'), pip = null;
+    var mbox = host.querySelector('[data-mbox]'), fbox = host.querySelector('[data-fitbox]'), last = null, saveT = null;
+
+    /* ---- the measure bar: "2.14 m · Save · It's really…" after two taps */
+    function mlen() { return last ? LS.fmtLen(last.raw * v.k) : ''; }
+    function measureBar() {
+      if (!last) { mbox.innerHTML = ''; return; }
+      mbox.innerHTML = '<div class="ls-mbar" role="status"><span class="ls-mlen" data-mlen>' + esc(mlen()) + '</span><span class="grow"></span>' +
+        (opts.onMeasured ? '<button class="ui-btn sm" data-msave>' + ic('save') + 'Save</button>' +
+          '<button class="ui-btn sm" data-mfix title="Tell us the real length: every size follows">' + ic('ruler') + 'It\'s really…</button>' : '') +
+        '<button class="ui-btn sm icon ghost" data-mx aria-label="Clear the measurement">' + ic('x') + '</button></div>';
+    }
+    function clearMeasureBar() { last = null; mbox.innerHTML = ''; }
+    v.onMeasure = function (a, b, raw) { last = { a: [a.x, a.y, a.z], b: [b.x, b.y, b.z], raw: raw }; measureBar(); };
+    v.onRelabel = function () {
+      var el = mbox.querySelector('[data-mlen]'); if (el) el.textContent = mlen();
+      if (v.sel) drawFitBar(v.sel);
+    };
+    mbox.addEventListener('click', function (e) {
+      if (e.target.closest('[data-mx]')) { v.clearMeasures(); clearMeasureBar(); return; }
+      if (e.target.closest('[data-mcancel]')) { measureBar(); return; }
+      if (e.target.closest('[data-mfix]') && last) { opts.onMeasured('fix', JSON.stringify(last)); return; }
+      if (e.target.closest('[data-msave]') && last) {
+        mbox.innerHTML = '<form class="ls-mbar" data-mform><span class="ls-mlen" data-mlen>' + esc(mlen()) + '</span>' +
+          '<input type="text" maxlength="60" placeholder="What is it? e.g. Sofa wall" aria-label="Name this measurement">' +
+          '<button class="ui-btn sm primary" type="submit">' + ic('check') + 'Keep</button>' +
+          '<button type="button" class="ui-btn sm ghost" data-mcancel>Cancel</button></form>';
+        var inp = mbox.querySelector('input');
+        setTimeout(function () { inp.focus(); }, 30);
+      }
+    });
+    mbox.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!last) return;
+      var inp = mbox.querySelector('input');
+      var m = { a: last.a, b: last.b, label: ((inp && inp.value) || '').trim().slice(0, 60) };
+      v.clearMeasures(); clearMeasureBar();
+      opts.onMeasured('save', JSON.stringify(m));
+    });
+
+    /* ---- the fit bar: the chosen furniture box (turn, keep, remove) */
+    function saveFits() {
+      if (!opts.onFits) return;
+      clearTimeout(saveT);
+      saveT = setTimeout(function () { opts.onFits(JSON.stringify(v.getFits(true))); }, 400);
+    }
+    function drawFitBar(f) {
+      if (!f) { fbox.innerHTML = ''; return; }
+      fbox.innerHTML = '<div class="ls-fbar ' + (f.clear ? 'ok' : 'bad') + '" role="status">' +
+        '<span class="ls-fstate">' + (f.clear ? ic('check') + 'Fits here' : ic('info') + 'Touches something') + '</span>' +
+        '<span class="ls-fname"><b>' + esc(f.spec.label) + '</b> <span>' + esc(LS.fmtBox(f.spec.w, f.spec.d, f.spec.h)) + '</span></span>' +
+        '<span class="grow"></span>' +
+        '<button class="ui-btn sm icon" data-frot="-15" aria-label="Turn 15° to the left" title="Turn 15° to the left"><span class="ls-flip">' + ic('rotate') + '</span></button>' +
+        '<button class="ui-btn sm icon" data-frot="15" aria-label="Turn 15° to the right" title="Turn 15° to the right">' + ic('rotate') + '</button>' +
+        (f.kept ? '<span class="ls-fkept">' + ic('check') + 'Kept</span>'
+          : opts.onFits ? '<button class="ui-btn sm primary" data-fkeep>' + ic('check') + 'Keep it</button>'
+          : '<span class="ls-fhint">' + esc(opts.keepHint || 'Copy to my rooms to keep it') + '</span>') +
+        '<button class="ui-btn sm icon ghost" data-fdel aria-label="Remove this box" title="Remove this box">' + ic('trash') + '</button>' +
+        '<button class="ui-btn sm ghost" data-fdone>Done</button></div>';
+    }
+    v.onFitSelect = drawFitBar;
+    v.onFitChange = function (f, final) { if (f === v.sel) drawFitBar(f); if (final && f.kept) saveFits(); };
+    fbox.addEventListener('click', function (e) {
+      var f = v.sel;
+      if (!f) return;
+      var rot = e.target.closest('[data-frot]');
+      if (rot) { v.rotateFit(f, +rot.getAttribute('data-frot')); return; }
+      if (e.target.closest('[data-fkeep]')) { f.kept = true; drawFitBar(f); saveFits(); UI.toast('Kept. It shows on the share link and the floor plan.', 'ok'); return; }
+      if (e.target.closest('[data-fdel]')) { var was = f.kept; v.removeFit(f); if (was) saveFits(); return; }
+      if (e.target.closest('[data-fdone]')) v.selectFit(null);
+    });
 
     function setOn(sel, on) { var b = host.querySelector(sel); if (b) b.classList.toggle('on', on); }
     function pop() {
       var old = host.querySelector('.ls-pop'); if (old) { old.remove(); return; }
       var p = document.createElement('div'); p.className = 'ls-pop';
-      p.innerHTML = (hasMesh ? '<label>Show<div class="ui-seg"><button data-disp="points">Points</button><button data-disp="surface">Surface</button></div></label>' : '') +
+      p.innerHTML = '<label>Units<div class="ui-seg" role="group" aria-label="Units"><button data-units="m">m</button><button data-units="ft">ft·in</button></div></label>' +
+        (hasMesh ? '<label>Show<div class="ui-seg"><button data-disp="points">Points</button><button data-disp="surface">Surface</button></div></label>' : '') +
         '<label>Colours<div class="ui-seg"><button data-col="photo">Photo</button><button data-col="height">Height</button><button data-col="clay">Clay</button></div></label>' +
         '<label>Point size<input type="range" min="0.4" max="3" step="0.1" value="' + v.state.size + '" data-size></label>' +
         '<label class="ui-check" style="display:flex;color:var(--c-ink)"><input type="checkbox" data-cut' + (v.state.cut ? ' checked' : '') + '> Dollhouse (hide the ceiling)</label>' +
@@ -707,7 +1079,8 @@
       host.querySelector('.ls-more').appendChild(p);
       mark();
       p.addEventListener('click', function (e) {
-        var d = e.target.closest('[data-disp]'), c = e.target.closest('[data-col]');
+        var d = e.target.closest('[data-disp]'), c = e.target.closest('[data-col]'), un = e.target.closest('[data-units]');
+        if (un) { LS.setUnits(un.getAttribute('data-units')); mark(); }
         if (d) { v.setDisplay(d.getAttribute('data-disp')); mark(); }
         if (c) { v.setColor(c.getAttribute('data-col')); mark(); }
       });
@@ -720,6 +1093,7 @@
       function mark() {
         p.querySelectorAll('[data-disp]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-disp') === v.state.display); });
         p.querySelectorAll('[data-col]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-col') === v.state.color); });
+        p.querySelectorAll('[data-units]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-units') === LS.units); });
       }
     }
     function endReplay() {
@@ -770,9 +1144,10 @@
       if (e.target.closest('[data-replay]')) { replay(); return; }
       if (e.target.closest('[data-measure]')) {
         var on = !v.state.measuring; v.setMeasuring(on); setOn('[data-measure]', on);
-        if (!on) v.clearMeasures();
+        if (!on) { v.clearMeasures(); clearMeasureBar(); }
         return;
       }
+      if (e.target.closest('[data-fit]')) { if (v.state.measuring) { v.setMeasuring(false); setOn('[data-measure]', false); } opts.onFit(); return; }
       if (e.target.closest('[data-more]')) { pop(); return; }
       if (e.target.closest('[data-shot]')) {
         var a = document.createElement('a'); a.href = v.snapshot(1600, 1000, false); a.download = (scan.title || 'room').replace(/[^\w\- ]+/g, '') + '.jpg'; a.click();
@@ -793,6 +1168,6 @@
       if (p && !e.target.closest('.ls-more')) p.remove();
     });
     if (opts.autoReplay && hasPath) setTimeout(replay, 300);
-    return { endReplay: endReplay };
+    return { endReplay: endReplay, drawFitBar: drawFitBar, measuring: function (on) { v.setMeasuring(on); setOn('[data-measure]', on); if (!on) { v.clearMeasures(); clearMeasureBar(); } } };
   };
 })();

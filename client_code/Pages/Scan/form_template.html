@@ -85,11 +85,11 @@
           </div>
 
           <div class="ui-card sc-card">
-            <h2 class="sc-h"><i class="ic ic-ruler"></i>Measurements</h2>
+            <h2 class="sc-h"><i class="ic ic-cube"></i>Size</h2>
             <div class="sc-dims" anvil:name="dims">
-              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span>wide · m</span></div>
-              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span>deep · m</span></div>
-              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span>high · m</span></div>
+              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_w">wide · m</span></div>
+              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_d">deep · m</span></div>
+              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_h">high · m</span></div>
             </div>
             <dl class="sc-kv">
               <div class="kv-row" anvil:name="row_floor"><dt>Floor</dt><dd><anvil-component type="Label" name="kv_floor"></anvil-component></dd></div>
@@ -98,6 +98,20 @@
               <div class="kv-row" anvil:name="row_ms"><dt>Processed in</dt><dd><anvil-component type="Label" name="kv_ms"></anvil-component></dd></div>
             </dl>
             <anvil-component type="Label" name="scale_note" prop:role='["fine-print", "sc-foot"]'></anvil-component>
+            <div class="ui-row sc-fix-row">
+              <anvil-component type="Button" name="fix_size" prop:text="Fix the size" prop:tooltip="Measure something you know, then tap It's really…" prop:role='["btn", "btn-sm", "ic-ruler"]'></anvil-component>
+              <anvil-component type="Button" name="undo_fix" prop:text="Undo the fix" prop:role='["btn", "btn-sm", "btn-ghost", "ic-undo"]'></anvil-component>
+            </div>
+          </div>
+
+          <div class="ui-card sc-card">
+            <h2 class="sc-h"><i class="ic ic-ruler"></i>Measurements</h2>
+            <anvil-component type="RepeatingPanel" name="measures_list" prop:item_template="Logsteps.Items.MeasureRow" prop:role='["sc-meas-list"]'></anvil-component>
+            <anvil-component type="Label" name="no_measures" prop:role='["fine-print"]'></anvil-component>
+            <div class="ui-row sc-meas-actions">
+              <anvil-component type="Button" name="measure_button" prop:text="Measure" prop:role='["btn", "btn-sm", "ic-ruler"]'></anvil-component>
+              <anvil-component type="Button" name="fit_button" prop:text="Will it fit?" prop:role='["btn", "btn-sm", "ic-box"]'></anvil-component>
+            </div>
           </div>
 
           <div class="ui-card sc-card">
@@ -133,6 +147,7 @@
             <h2 class="sc-h"><i class="ic ic-edit"></i>Edit and download</h2>
             <a class="ui-btn primary block sc-studio" anvil:name="studio_link" href="#home"><i class="ic ic-brush"></i>Open in Studio</a>
             <p class="small muted sc-studio-note">Crop, clean, level the floor, calibrate the size and recolour, on a computer.</p>
+            <a class="ui-btn block sc-plan-link" anvil:name="plan_link" href="#home"><i class="ic ic-plan"></i>Floor plan: print, PDF or PNG</a>
             <div class="sc-dl">
               <anvil-component type="Button" name="dl_cloud" prop:text="Points (.ply)" prop:role='["btn", "btn-sm", "ic-download"]'></anvil-component>
               <anvil-component type="Button" name="dl_mesh" prop:text="Surface (.ply)" prop:role='["btn", "btn-sm", "ic-download"]'></anvil-component>

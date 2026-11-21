@@ -16,14 +16,30 @@ events:
     description: "After pick(): the point tapped, as [x, y, z], or None when the tap missed the room"
     parameters:
       - name: point
+  - name: measured
+    description: "Owners: Save (action 'save', measure {a, b, label}) or It's really... (action 'fix', measure {a, b, raw}) on the measure bar"
+    parameters:
+      - name: action
+      - name: measure
+  - name: fit_requested
+    description: The Fit button was pressed (open Dialogs/FitBox, then add_fit)
+  - name: fits_changed
+    description: "Owners: the kept furniture boxes changed (kept, moved, turned, removed): fits = [{label, w, d, h, x, z, a}]"
+    parameters:
+      - name: fits
+  - name: units_changed
+    description: The m / ft-in switch in the Display pop-over changed (units = 'm' or 'ft')
+    parameters:
+      - name: units
 toolbox_item:
   title: 3D room view
   group: Logsteps
 help_text: |
   The 3D view of a scan (three.js, theme/assets/ls-viewer.js) with its control bar (Orbit / Walk / Plan, Replay,
-  Measure, Display, picture, full screen). Call show_scan(scan) with the scan dict from the server; the model loads in
-  the background (event ready). pick(hint) makes the next tap a pin (event picked); set_pins(list), thumbnail(),
-  download(kind) and dispose() talk to the engine.
+  Measure, Fit, Display, picture, full screen). Call show_scan(scan, edit) with the scan dict from the server; the
+  model loads in the background (event ready). pick(hint) makes the next tap a pin (event picked); set_pins(list),
+  set_measures(list), set_scale(k), add_fit(spec), set_fits(list), start_measure(), thumbnail(), download(kind) and
+  dispose() talk to the engine.
 ---
 <div class="ls-viewer-box">
   <div class="ls-view" anvil:dom-node="view"></div>

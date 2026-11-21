@@ -40,28 +40,60 @@ class Share(ShareTemplate):
         self.manage_link.visible = owner
         state.set_attr(self.manage_link, "href", router.href("scan", s["id"]))
         self.remix_button.visible = not owner
+        state.set_attr(self.plan_link, "href", router.href("plan", self.token))
         self.notes.text = s.get("notes") or "No notes."
         self.notes.role = ["sh-notes"] if s.get("notes") else ["sh-notes", "faint-text"]
         pins = s.get("annotations") or []
         self.pins_part.visible = bool(pins)
         self.pins.items = [dict(a, i=i, can_edit=False) for i, a in enumerate(pins)]
         st = (s.get("model") or {}).get("stats") or {}
+        self.kv_points.text = ls.fmt_num(st.get("points") or s.get("points"))
+        self._draw_size()
+        self.cta.visible = not state.me()
+
+    def _draw_size(self):
+        s = self.scan
+        st = (s.get("model") or {}).get("stats") or {}
         size = s.get("size") or st.get("size")
         self.dims.visible = bool(size)
         if size:
             self.dim_w.text, self.dim_d.text, self.dim_h.text = ls.fmt_m(size[0]), ls.fmt_m(size[1]), ls.fmt_m(size[2])
+        for node, word in (("u_w", "wide"), ("u_d", "deep"), ("u_h", "high")):
+            self.dom_nodes[node].textContent = ls.dim_unit(word)
         self.row_floor.visible = bool(s.get("area"))
-        self.kv_floor.text = "≈ %s m²" % s.get("area")
-        self.kv_points.text = ls.fmt_num(st.get("points") or s.get("points"))
-        self.cta.visible = not state.me()
+        self.kv_floor.text = ls.fmt_area(s.get("area"))
+        src, ref = s.get("scale_source") or "", s.get("scale_ref") or {}
+        self.scale_note.visible = src in ("phone", "calibrated", "height")
+        if src == "phone":
+            self.scale_note.text = "Sizes corrected by the owner from “%s”%s." % (
+                ref.get("label") or "a length", " (%s)" % ls.fmt_len(ref["real"]) if ref.get("real") else "")
+        elif src == "height":
+            self.scale_note.text = "Sized from the phone height the owner gave (about %s)." % ls.fmt_len(ref.get("real") or 1.4)
+        else:
+            self.scale_note.text = "Calibrated in Studio against a known length."
+        rows = ls.measure_rows(s, False)
+        self.meas_part.visible = bool(rows)
+        self.measures_list.items = rows
 
     @handle("", "show")
     def form_show(self, **event_args):
         if self.scan and not self.viewer.is_ready():
-            self.viewer.show_scan(self.scan)
+            hint = "Keep it from your room page (Manage)" if self.scan.get("owner_view") else "Copy to my rooms to keep it"
+            self.viewer.show_scan(self.scan, edit=False, keep_hint=hint)
 
     def leave(self):
         self.viewer.dispose()
+
+    @handle("viewer", "fit_requested")
+    def viewer_fit_requested(self, **event_args):
+        from ...Dialogs.FitBox import FitBox
+        spec = alert(FitBox(), buttons=[], role="app-dialog", dismissible=True)
+        if spec and not self.viewer.add_fit(spec):
+            state.toast("The room is still loading.", "error")
+
+    @handle("viewer", "units_changed")
+    def viewer_units_changed(self, **event_args):
+        self._draw_size()
 
     def _draw_heart(self):
         s = self.scan

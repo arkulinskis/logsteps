@@ -20,6 +20,7 @@
             <anvil-component type="Button" name="heart_button" prop:role='["btn", "sh-heart", "ic-heart"]'></anvil-component>
             <a class="ui-btn" anvil:name="manage_link" href="#home"><i class="ic ic-edit"></i>Manage</a>
             <anvil-component type="Button" name="remix_button" prop:text="Copy to my rooms" prop:role='["btn", "ic-copy"]'></anvil-component>
+            <a class="ui-btn" anvil:name="plan_link" href="#explore"><i class="ic ic-plan"></i>Floor plan</a>
             <anvil-component type="Button" name="share_button" prop:text="Share" prop:role='["btn", "btn-primary", "ic-link"]'></anvil-component>
           </div>
         </div>
@@ -36,15 +37,20 @@
           <div class="ui-card sc-card">
             <h2 class="sc-h"><i class="ic ic-ruler"></i>Size</h2>
             <div class="sc-dims" anvil:name="dims">
-              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span>wide · m</span></div>
-              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span>deep · m</span></div>
-              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span>high · m</span></div>
+              <div><anvil-component type="Label" name="dim_w" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_w">wide · m</span></div>
+              <div><anvil-component type="Label" name="dim_d" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_d">deep · m</span></div>
+              <div><anvil-component type="Label" name="dim_h" prop:role='["dim-b"]'></anvil-component><span anvil:dom-node="u_h">high · m</span></div>
             </div>
             <dl class="sc-kv">
               <div class="kv-row" anvil:name="row_floor"><dt>Floor</dt><dd><anvil-component type="Label" name="kv_floor"></anvil-component></dd></div>
               <div class="kv-row"><dt>Points</dt><dd><anvil-component type="Label" name="kv_points"></anvil-component></dd></div>
             </dl>
-            <p class="small muted sc-foot">Use Measure under the view to check any distance yourself.</p>
+            <anvil-component type="Label" name="scale_note" prop:role='["fine-print", "sc-foot"]'></anvil-component>
+            <div anvil:name="meas_part">
+              <h2 class="sc-h sc-h-gap"><i class="ic ic-ruler"></i>Measurements</h2>
+              <anvil-component type="RepeatingPanel" name="measures_list" prop:item_template="Logsteps.Items.MeasureRow" prop:role='["sc-meas-list"]'></anvil-component>
+            </div>
+            <p class="small muted sc-foot">Use Measure under the view to check any distance yourself, and Fit to try a sofa or a bed in the room.</p>
           </div>
         </div>
         <div class="sh-cta" anvil:name="cta">

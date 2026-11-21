@@ -87,8 +87,50 @@ def fmt_date(iso):
     return "%s %s" % (state.short_date(iso), iso[:4])
 
 
+def units():
+    """'m' or 'ft' (the m | ft-in switch, remembered per browser: LS.units in ls-viewer.js)."""
+    return "ft" if str(LS.units or "m") == "ft" else "m"
+
+
+def set_units(u):
+    LS.setUnits("ft" if u == "ft" else "m")
+
+
 def fmt_m(x):
-    return "%.2f" % float(x or 0)
+    """A room size in the chosen units: '4.80' (metres; the page shows the unit beside it) or '15′ 9″'."""
+    return str(LS.fmtDim(float(x or 0)))
+
+
+def fmt_len(x):
+    """A length with its unit: '2.14 m', '45 cm' or '7′ ½″'."""
+    return str(LS.fmtLen(float(x or 0)))
+
+
+def fmt_area(a):
+    return str(LS.fmtArea(float(a or 0)))
+
+
+def fmt_box(w, d, h=None):
+    return str(LS.fmtBox(w, d, h))
+
+
+def dim_unit(word):
+    """The caption under a size box: 'wide · m' (metres) or 'wide' (feet and inches carry their marks)."""
+    return word + " · m" if units() == "m" else word
+
+
+def measure_rows(scan, can_edit):
+    """Items/MeasureRow items for the Measurements card: saved measurements, then kept furniture boxes."""
+    k = float(scan.get("scale_k") or 1)
+    rows = []
+    for i, m in enumerate(scan.get("measures") or []):
+        a, b = m.get("a") or [0, 0, 0], m.get("b") or [0, 0, 0]
+        raw = ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2) ** 0.5
+        rows.append({"kind": "measure", "i": i, "label": m.get("label") or "", "text": fmt_len(raw * k), "can_edit": can_edit})
+    for i, f in enumerate(scan.get("fits") or []):
+        rows.append({"kind": "fit", "i": i, "label": f.get("label") or "Box", "text": fmt_box(f.get("w"), f.get("d"), f.get("h")),
+                     "can_edit": can_edit})
+    return rows
 
 
 # ---------------------------------------------------------------- server calls for the engines (UI.api)

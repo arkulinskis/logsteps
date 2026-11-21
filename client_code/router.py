@@ -22,6 +22,7 @@ PAGES = {
     "explore": (None, "Explore"),
     "scan": ("user", "Room"),
     "s": (None, "Shared room"),
+    "plan": (None, "Floor plan"),
     "studio": ("user", "Studio"),
     "profile": ("user", "Your profile"),
     "admin": ("admin", "Admin"),
@@ -57,6 +58,9 @@ def _form(name):
     if name == "studio":
         from .Pages.Studio import Studio
         return Studio
+    if name == "plan":
+        from .Pages.Plan import Plan
+        return Plan
     if name == "profile":
         from .Pages.Profile import Profile
         return Profile

@@ -8,7 +8,10 @@ from ... import ls, router, state
 STEPS = [("upload", "Frames uploaded"), ("clock", "In the queue"), ("cpu", "Reconstructing with lingbot-map"),
          ("layers", "Cleaning up and building the surface"), ("cube", "Ready to explore")]
 SCALE_NOTE = {"calibrated": "Calibrated in Studio: measurements are exact to the reference you gave.",
-              "import": "Sizes come from the imported file."}
+              "import": "Sizes come from the imported file.",
+              "demo": "A sample room: its sizes are exact."}
+ESTIMATE_NOTE = ("Sizes are estimated from how high your phone was held. To make them exact, measure something you know "
+                 "(a door is about 2.03 m high) and tap “It's really…”.")
 
 
 class Scan(ScanTemplate):
@@ -36,6 +39,7 @@ class Scan(ScanTemplate):
         self.pins.add_event_handler("x-edit-pin", self._edit_pin)
         self.versions.add_event_handler("x-use", self._use_version)
         self.versions.add_event_handler("x-delete", self._delete_version)
+        self.measures_list.add_event_handler("x-del", self._del_row)
         self.hero_img_node = self.dom_nodes["hero_img"]
         self.hero_img_node.addEventListener("error", self._hide_hero)
         self.missing.visible = self.wait_part.visible = self.ready_part.visible = False
@@ -72,7 +76,7 @@ class Scan(ScanTemplate):
             self.timer.interval = 0
             self.draw_ready()
             if self.visible_on_page():
-                self.viewer.show_scan(s)
+                self.viewer.show_scan(s, edit=bool(s.get("can_edit")))
         else:
             self.viewer.dispose()
             self.ready_part.visible = False
@@ -87,7 +91,7 @@ class Scan(ScanTemplate):
     def form_show(self, **event_args):
         self._shown = True
         if self.scan and self.scan["status"] == "ready" and not self.viewer.is_ready():
-            self.viewer.show_scan(self.scan)
+            self.viewer.show_scan(self.scan, edit=bool(self.scan.get("can_edit")))
 
     def leave(self):
         self.timer.interval = 0
@@ -188,19 +192,15 @@ class Scan(ScanTemplate):
         st = (s.get("model") or {}).get("stats") or {}
         edit = bool(s.get("can_edit"))
         self._draw_title()
-        size = s.get("size") or st.get("size")
-        self.dims.visible = bool(size)
-        if size:
-            self.dim_w.text, self.dim_d.text, self.dim_h.text = ls.fmt_m(size[0]), ls.fmt_m(size[1]), ls.fmt_m(size[2])
-        self.row_floor.visible = bool(s.get("area"))
-        self.kv_floor.text = "≈ %s m²" % s.get("area")
+        self._draw_size()
+        self._draw_measures()
+        state.set_attr(self.plan_link, "href", router.href("plan", s["token"]))
         self.kv_points.text = ls.fmt_num(st.get("points") or s.get("points"))
         faces = st.get("faces") or s.get("faces")
         self.row_faces.visible = bool(faces)
         self.kv_faces.text = ls.fmt_num(faces) + " triangles"
         self.row_ms.visible = bool(s.get("process_ms"))
         self.kv_ms.text = "%d s" % round((s.get("process_ms") or 0) / 1000)
-        self.scale_note.text = SCALE_NOTE.get(s.get("scale_source") or "", "Sizes are estimated from how high your phone was held. For exact measurements, calibrate in Studio.")
         self._draw_pins()
         self.add_pin.visible = edit
         self.share_card.visible = edit
@@ -220,6 +220,151 @@ class Scan(ScanTemplate):
         else:
             self.footage_text.text = "No footage kept for this room."
         self.footage_actions.visible = bool(s.get("frames"))
+
+    def _draw_size(self):
+        """W x D x H, floor area and where the scale comes from, in the chosen units, with the room's size fix."""
+        s = self.scan
+        st = (s.get("model") or {}).get("stats") or {}
+        size = s.get("size") or st.get("size")
+        self.dims.visible = bool(size)
+        if size:
+            self.dim_w.text, self.dim_d.text, self.dim_h.text = ls.fmt_m(size[0]), ls.fmt_m(size[1]), ls.fmt_m(size[2])
+        for node, word in (("u_w", "wide"), ("u_d", "deep"), ("u_h", "high")):
+            self.dom_nodes[node].textContent = ls.dim_unit(word)
+        self.row_floor.visible = bool(s.get("area"))
+        self.kv_floor.text = ls.fmt_area(s.get("area"))
+        src = s.get("scale_source") or ""
+        ref = s.get("scale_ref") or {}
+        if src == "phone":
+            real = " (%s)" % ls.fmt_len(ref["real"]) if ref.get("real") else ""
+            self.scale_note.text = "Corrected on your phone from “%s”%s." % (ref.get("label") or "a length", real)
+        elif src == "height":
+            self.scale_note.text = ("Sized from the phone height you gave (about %s). For exact sizes, measure a door and tap "
+                                    "“It's really…”." % ls.fmt_len(ref.get("real") or 1.4))
+        else:
+            self.scale_note.text = SCALE_NOTE.get(src, ESTIMATE_NOTE)
+        edit = bool(s.get("can_edit"))
+        self.fix_size.visible = edit
+        self.fix_size.text = "Fix it again" if src == "phone" else "Fix the size"
+        self.undo_fix.visible = edit and src == "phone"
+
+    def _draw_measures(self):
+        s = self.scan
+        edit = bool(s.get("can_edit"))
+        rows = ls.measure_rows(s, edit)
+        self.measures_list.items = rows
+        self.measures_list.visible = bool(rows)
+        self.no_measures.visible = not rows
+        self.no_measures.text = ("Tap Measure, then two points in the room. Save the line to keep it here: it shows on the "
+                                 "share link and the floor plan too." if edit else "No saved measurements.")
+
+    def _redraw_sizes(self):
+        self._draw_size()
+        self._draw_measures()
+        self.viewer.set_scale(self.scan.get("scale_k") or 1)
+
+    # ---- measurements, the size fix, furniture boxes
+    @handle("viewer", "measured")
+    def viewer_measured(self, action="", measure=None, **event_args):
+        m = measure or {}
+        if action == "save":
+            items = list(self.scan.get("measures") or []) + [{"a": m.get("a"), "b": m.get("b"), "label": m.get("label") or ""}]
+            r = state.call("save_measures", self.scan["id"], items)
+            if r:
+                self.scan["measures"] = r["measures"]
+                self.viewer.set_measures(r["measures"])
+                self._draw_measures()
+                state.toast("Measurement saved", "ok")
+        elif action == "fix":
+            self._real_length(float(m.get("raw") or 0))
+
+    def _real_length(self, raw):
+        if raw <= 0:
+            return
+        from ...Dialogs.RealLength import RealLength
+        out = alert(RealLength(raw=raw, k=self.scan.get("scale_k") or 1), buttons=[], role="app-dialog", dismissible=True)
+        if not out:
+            return
+        r = state.call("set_scale", self.scan["id"], out["real"] / raw, {"label": out["label"], "real": out["real"], "raw": raw})
+        if r:
+            self.scan = r["scan"]
+            self._redraw_sizes()
+            state.toast("Sizes fixed: every length follows your %s" % ls.fmt_len(out["real"]), "ok")
+
+    @handle("undo_fix", "click")
+    def undo_fix_click(self, **event_args):
+        r = state.call("clear_scale", self.scan["id"])
+        if r:
+            self.scan = r["scan"]
+            self._redraw_sizes()
+            state.toast("Back to the estimated sizes", "ok")
+
+    @handle("fix_size", "click")
+    def fix_size_click(self, **event_args):
+        self._start_measure("Tap both ends of something you know: a door's height, a sheet of paper. Then It's really….")
+
+    @handle("measure_button", "click")
+    def measure_button_click(self, **event_args):
+        self._start_measure("Tap two points in the room.")
+
+    def _start_measure(self, hint):
+        if not self.viewer.start_measure():
+            state.toast("The room is still loading.", "error")
+            return
+        if window.innerWidth < 980:
+            self.viewer.scroll_into_view(smooth=True)
+        state.toast(hint)
+
+    @handle("fit_button", "click")
+    def fit_button_click(self, **event_args):
+        self.viewer_fit_requested()
+
+    @handle("viewer", "fit_requested")
+    def viewer_fit_requested(self, **event_args):
+        from ...Dialogs.FitBox import FitBox
+        spec = alert(FitBox(), buttons=[], role="app-dialog", dismissible=True)
+        if not spec:
+            return
+        if not self.viewer.add_fit(spec):
+            state.toast("The room is still loading.", "error")
+            return
+        if window.innerWidth < 980:
+            self.viewer.scroll_into_view(smooth=True)
+
+    @handle("viewer", "fits_changed")
+    def viewer_fits_changed(self, fits=None, **event_args):
+        r = state.call_quiet("save_fits", self.scan["id"], fits or [])
+        if not r or not r.get("ok"):
+            state.toast((r or {}).get("error") or "The box wasn't saved. Check your connection.", "error")
+            return
+        self.scan["fits"] = r["fits"]
+        self._draw_measures()
+
+    @handle("viewer", "units_changed")
+    def viewer_units_changed(self, **event_args):
+        self._draw_size()
+        self._draw_measures()
+
+    def _del_row(self, kind="", i=0, **event_args):
+        if kind == "fit":
+            items = list(self.scan.get("fits") or [])
+            if 0 <= i < len(items):
+                items.pop(i)
+                r = state.call("save_fits", self.scan["id"], items)
+                if r:
+                    self.scan["fits"] = r["fits"]
+                    self.viewer.set_fits(r["fits"])
+                    self._draw_measures()
+            return
+        items = list(self.scan.get("measures") or [])
+        if 0 <= i < len(items):
+            items.pop(i)
+            r = state.call("save_measures", self.scan["id"], items)
+            if r:
+                self.scan["measures"] = r["measures"]
+                self.viewer.set_measures(r["measures"])
+                self._draw_measures()
+                state.toast("Measurement deleted")
 
     def _draw_title(self):
         s = self.scan

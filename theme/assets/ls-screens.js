@@ -105,11 +105,42 @@
         '<label class="ui-field"><span>Quality</span><select name="quality">' + QUALITY.map(function (q) { return '<option value="' + q[0] + '"' + (q[0] === opts.quality ? ' selected' : '') + '>' + q[1] + ': ' + q[2] + '</option>'; }).join('') + '</select></label>' +
         '<div class="ui-field wide"><span>What kind of room?</span>' + rooms(opts.room) + '</div>' +
         '<label class="ui-check wide"><input type="checkbox" name="mesh"' + (opts.mesh ? ' checked' : '') + '> Build a solid surface too, not only points</label>' +
+        heightField() +
         (method === 'video' ? '<label class="cp-drop wide" data-videodrop>' + UI.icon('video') + '<b>Choose a video of the room</b><span>MP4 or MOV, up to 2 minutes is plenty</span><input type="file" accept="video/*" data-videofile></label>'
           : (!phone ? '<div class="ui-note wide cp-note">' + UI.icon('info') + '<div>The camera works best on a phone. On this computer you can still use a webcam, or <a href="#capture/video" data-go="capture/video">upload a video</a> you took with your phone.</div></div>' : '')) +
         '<div class="cp-go wide"><a class="ui-btn ghost" href="#home" data-go="home">Cancel</a>' +
         (method === 'camera' ? '<button class="ui-btn primary lg" type="submit">' + UI.icon('camera') + 'Open the camera</button>' : '') + '</div></form>';
     }
+
+    /* Your height -> how high the phone is held (chest height = about 0.76 x your height). The scan station assumes
+       1.4 m; the server turns the difference into the room's size fix (stats.kh). The height itself stays in this
+       browser (localStorage), only the phone height is sent with the scan. */
+    var CHEST = 0.76;
+    function savedHeight() { try { var h = parseFloat(localStorage.getItem('ls.height')); return h >= 1.2 && h <= 2.3 ? h : null; } catch (e) { return null; } }
+    function heightField() {
+      var h = savedHeight(), ft = LS.units === 'ft', totalIn = h ? Math.round(h / 0.0254) : null;
+      var inputs = ft
+        ? '<input type="number" name="hft" min="4" max="7" step="1" inputmode="numeric" aria-label="Feet" placeholder="5" value="' + (totalIn ? Math.floor(totalIn / 12) : '') + '"><span>ft</span>' +
+          '<input type="number" name="hin" min="0" max="11" step="1" inputmode="numeric" aria-label="Inches" placeholder="8" value="' + (totalIn ? totalIn % 12 : '') + '"><span>in</span>'
+        : '<input type="number" name="hcm" min="120" max="230" step="1" inputmode="numeric" aria-label="Your height in centimetres" placeholder="170" value="' + (h ? Math.round(h * 100) : '') + '"><span>cm</span>';
+      return '<div class="ui-field wide cp-height"><span>Your height <em>(optional: it makes the sizes true)</em></span>' +
+        '<div class="cp-hrow">' + inputs + '</div><small class="muted" data-heldnote>' + esc(heldNote(h)) + '</small></div>';
+    }
+    function heldNote(h) {
+      return h ? 'Hold the phone at chest height, about ' + LS.fmtLen(h * CHEST) + ' off the floor. We size the room from that.'
+        : 'Without it we guess the phone was held at 1.40 m. You can fix the size later with "It\'s really…" on the room page.';
+    }
+    function heightFrom(v) {
+      var h = null;
+      if (v.hcm) h = parseFloat(v.hcm) / 100;
+      else if (v.hft) h = ((parseFloat(v.hft) || 0) * 12 + (parseFloat(v.hin) || 0)) * 0.0254;
+      return h >= 1.2 && h <= 2.3 ? h : null;
+    }
+    view.addEventListener('input', function (e) {
+      if (!e.target.closest || !e.target.closest('.cp-height')) return;
+      var f = e.target.closest('form'), note = f && f.querySelector('[data-heldnote]');
+      if (note) note.textContent = heldNote(heightFrom(UI.formData(f)));
+    });
 
     /* ------------------------------------------------ camera */
     function readForm() {
@@ -117,6 +148,9 @@
       if (!f) return;
       var v = UI.formData(f);
       opts.title = v.title || ''; opts.quality = v.quality || 'balanced'; opts.mesh = !!v.mesh; opts.room = v.room || 'living';
+      var h = heightFrom(v);
+      try { if (h) localStorage.setItem('ls.height', String(Math.round(h * 1000) / 1000)); } catch (e) { /* private window */ }
+      opts.held = h ? Math.round(h * CHEST * 1000) / 1000 : null;
     }
     function openCamera() {
       readForm();
@@ -143,7 +177,7 @@
         '<button class="cp-rec" data-rec aria-label="Start recording"><i></i></button>' +
         '<div class="cp-side"><div class="cp-sharp"><i data-sharp style="width:0"></i></div><span data-sharplbl>sharpness</span></div></div>' +
         '<div class="cp-start" data-startbox><div><h2>Ready when you are</h2><ol>' +
-        '<li>Stand in a corner, phone at chest height.</li><li>Press the red button and walk slowly along the walls.</li>' +
+        '<li>Stand in a corner, phone at chest height' + (opts.held ? ' (about ' + esc(LS.fmtLen(opts.held)) + ' up)' : '') + '.</li><li>Press the red button and walk slowly along the walls.</li>' +
         '<li>Tilt up and down now and then to catch the floor and ceiling.</li><li>Finish where you started, then press stop.</li></ol>' +
         '<button class="ui-btn lg" data-begin>' + UI.icon('camera') + 'I\'m ready</button></div></div>';
       document.body.appendChild(el);
@@ -316,6 +350,7 @@
         return chain;
       }).then(function () {
         show('Sending it to the scan station…');
+        if (opts.held) info.held = opts.held;
         return UI.apiQuiet('finish_capture', scan.id, info);
       }).then(function () {
         keeper = null;
@@ -514,12 +549,14 @@
   UI.page('studio', { title: 'Studio', auth: 'user' }, function (view, ctx) {
     var id = ctx.args[0], scan = null, V = null, alive = true, tool = 'nav', dirty = false, scaleSource = 'estimated';
     var undo = [], redo = [], log = [], annotations = [], path = [], picks = [], drag = null, colorBase = null, turnDeg = 0;
+    var extras = { measures: [], fits: [] };  /* saved measurements + furniture boxes: moved with every edit, saved with the version */
     view.innerHTML = '<div class="ui-wrap"><div class="ui-skel" style="height:70vh"></div></div>';
 
     /* -------------------------------------------- geometry helpers (each layer: {geom, obj}) */
     function layers() { return V ? Object.keys(V.layers).map(function (k) { return [k, V.layers[k]]; }) : []; }
     function snapshot(label) {
-      var snap = { label: label, layers: {}, ann: JSON.parse(JSON.stringify(annotations)), path: JSON.parse(JSON.stringify(path)), scale: scaleSource };
+      var snap = { label: label, layers: {}, ann: JSON.parse(JSON.stringify(annotations)), path: JSON.parse(JSON.stringify(path)), scale: scaleSource,
+                   ext: JSON.parse(JSON.stringify(extras)) };
       layers().forEach(function (l) {
         var g = l[1].geom;
         snap.layers[l[0]] = { pos: g.attributes.position.array.slice(), photo: g.userData.photo.slice(), index: g.index ? g.index.array.slice() : null };
@@ -531,7 +568,7 @@
         var s = snap.layers[k];
         setArrays(V.layers[k].geom, s.pos, s.photo, s.index);
       });
-      annotations = snap.ann; path = snap.path; scaleSource = snap.scale;
+      annotations = snap.ann; path = snap.path; scaleSource = snap.scale; extras = snap.ext || extras;
       afterChange();
     }
     function commit(label, fn) {
@@ -596,6 +633,14 @@
       path.forEach(function (e) {
         v.set(e[0], e[1], e[2]).applyMatrix4(m); var d = new THREE.Vector3(e[3], e[4], e[5]).applyMatrix3(nm).normalize();
         e[0] = r4(v.x); e[1] = r4(v.y); e[2] = r4(v.z); e[3] = r4(d.x); e[4] = r4(d.y); e[5] = r4(d.z);
+      });
+      (extras.measures || []).forEach(function (ms) {
+        ['a', 'b'].forEach(function (key) { v.set(ms[key][0], ms[key][1], ms[key][2]).applyMatrix4(m); ms[key] = [r4(v.x), r4(v.y), r4(v.z)]; });
+      });
+      (extras.fits || []).forEach(function (f) {  /* boxes keep their real size; their spot and turn follow the room */
+        v.set(f.x, 0, f.z).applyMatrix4(m); f.x = r4(v.x); f.z = r4(v.z);
+        var a = (f.a || 0) * Math.PI / 180, d = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a)).applyMatrix3(nm);
+        f.a = Math.round(((Math.atan2(-d.z, d.x) * 180 / Math.PI) % 360 + 360) % 360 * 10) / 10;
       });
     }
     function r4(x) { return Math.round(x * 10000) / 10000; }
@@ -987,7 +1032,7 @@
         LS.uploadFiles(files, function (n) { done += n; bar.style.width = Math.round(done / total * 100) + '%'; txt.textContent = 'Uploading ' + (done / 1048576).toFixed(1) + ' of ' + (total / 1048576).toFixed(1) + ' MB'; })
           .then(function (keys) {
             txt.textContent = 'Saving…';
-            return UI.api('upload_finish', { scan_id: scan.id, cloud: keys.cloud, mesh: keys.mesh || null, note: note, stats: stats(), annotations: annotations, path: path, scale_source: scaleSource });
+            return UI.api('upload_finish', { scan_id: scan.id, cloud: keys.cloud, mesh: keys.mesh || null, note: note, stats: stats(), annotations: annotations, path: path, scale_source: scaleSource, extras: extras });
           }).then(function (r) {
             m.close(); dirty = false; scan = r.scan; drawSide();
             UI.toast('Saved as version ' + r.scan.model.n, 'ok');
@@ -1095,10 +1140,17 @@
         annotations = JSON.parse(JSON.stringify(scan.annotations || []));
         path = JSON.parse(JSON.stringify(scan.path || []));
         scaleSource = scan.scale_source || 'estimated';
+        extras = { measures: JSON.parse(JSON.stringify(scan.measures || [])), fits: JSON.parse(JSON.stringify(scan.fits || [])) };
         drawShell();
-        return LS.open(view.querySelector('[data-view]'), scan, {}).then(function (v) {
+        return LS.open(view.querySelector('[data-view]'), scan, { extras: false }).then(function (v) {
           if (!alive) { v.dispose(); return; }
           V = v;
+          var k0 = +scan.scale_k || 1;
+          if (Math.abs(k0 - 1) > 1e-6) {  /* the size fix from the phone (or your height): Studio works in true sizes, a saved version keeps them */
+            transformAll(new THREE.Matrix4().makeScale(k0, k0, k0));
+            if (scaleSource === 'phone' || scaleSource === 'height') scaleSource = 'calibrated';
+            V.measureBounds(); V.setPins(annotations); V.setPath(path); V.fit();
+          }
           window.LS_STUDIO = { viewer: V, commit: commit, selectHeight: selectHeight, deleteSel: deleteSel, setTool: setTool, undo: doUndo, stats: stats };
           V.setShowPath(false);
           wireStage();
